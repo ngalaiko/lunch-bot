@@ -10,3 +10,4 @@ Slack commands:
 
 * `/roll` - to roll for a lunch place
 * `/add <place>` - to add a new place
+* `/list` - to see added places
