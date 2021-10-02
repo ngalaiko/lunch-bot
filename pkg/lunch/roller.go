@@ -24,7 +24,7 @@ type Roller struct {
 	rand *rand.Rand
 }
 
-func NewRoller(storage *store.S3Store) *Roller {
+func New(storage *store.S3Store) *Roller {
 	return &Roller{
 		placesStore: places.NewStore(storage),
 		rollsStore:  rolls.NewStore(storage),
@@ -44,6 +44,14 @@ func (r *Roller) NewPlace(ctx context.Context, name string) error {
 	return nil
 }
 
+func (r *Roller) ListPlacesNames(ctx context.Context) ([]string, error) {
+	names, err := r.placesStore.ListNames(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list names: %w", err)
+	}
+	return names, nil
+}
+
 func (r *Roller) Roll(ctx context.Context) (*places.Place, error) {
 	user, ok := users.FromContext(ctx)
 	if !ok {
@@ -51,7 +59,7 @@ func (r *Roller) Roll(ctx context.Context) (*places.Place, error) {
 	}
 
 	if err := r.checkRules(ctx, user); err != nil {
-		return nil, fmt.Errorf("failed to validate roll: %w", err)
+		return nil, fmt.Errorf("failed to validate rules: %w", err)
 	}
 
 	place, err := r.pickRandomPlace(ctx)
@@ -67,20 +75,20 @@ func (r *Roller) Roll(ctx context.Context) (*places.Place, error) {
 }
 
 func (r *Roller) storeResult(ctx context.Context, user *users.User, place *places.Place) error {
-	return r.rollsStore.Store(ctx, rolls.NewRoll(user, place.ID))
+	return r.rollsStore.Store(ctx, rolls.NewRoll(user, place.Name))
 }
 
 func (r *Roller) pickRandomPlace(ctx context.Context) (*places.Place, error) {
-	ids, err := r.placesStore.ListIDs(ctx)
+	names, err := r.placesStore.ListNames(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list places ids: %w", err)
 	}
 
-	if len(ids) == 0 {
+	if len(names) == 0 {
 		return nil, ErrNoPlaces
 	}
 
-	randomPlaceID := ids[r.rand.Intn(len(ids))]
+	randomPlaceID := names[r.rand.Intn(len(names))]
 	place, err := r.placesStore.Get(ctx, randomPlaceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get place by id: %w", err)

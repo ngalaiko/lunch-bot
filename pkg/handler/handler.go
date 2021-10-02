@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"lunch/pkg/lunch"
 	"lunch/pkg/request"
@@ -13,7 +14,8 @@ import (
 	"lunch/pkg/users"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
 )
 
 type CommandRequest struct {
@@ -23,10 +25,18 @@ type CommandRequest struct {
 	UserName string `query:"user_name"`
 }
 
+func mustLoadConfig() aws.Config {
+	cfg, err := config.LoadDefaultConfig(context.Background())
+	if err != nil {
+		panic(err)
+	}
+	return cfg
+}
+
 var (
-	sess    = session.Must(session.NewSession())
-	s3Store = store.NewS3(sess)
-	roller  = lunch.NewRoller(s3Store)
+	cfg     = mustLoadConfig()
+	s3Store = store.NewS3(cfg)
+	roller  = lunch.New(s3Store)
 )
 
 func Handle(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
@@ -47,6 +57,8 @@ func Handle(ctx context.Context, req events.APIGatewayProxyRequest) (*events.API
 		return handleRoll(ctx)
 	case "/add":
 		return handleAdd(ctx, command.Text)
+	case "/list":
+		return handleList(ctx)
 	default:
 		return response.BadRequest(fmt.Errorf("unknown command"))
 	}
@@ -71,4 +83,16 @@ func handleAdd(ctx context.Context, place string) (*events.APIGatewayProxyRespon
 		return response.InternalServerError(err)
 	}
 	return response.Ephemral(fmt.Sprintf("%s added!", place))
+}
+
+func handleList(ctx context.Context) (*events.APIGatewayProxyResponse, error) {
+	names, err := roller.ListPlacesNames(ctx)
+	if err != nil {
+		return response.InternalServerError(err)
+	}
+	msg := []string{"Places:", ""}
+	for _, name := range names {
+		msg = append(msg, fmt.Sprintf("• %s", name))
+	}
+	return response.Ephemral(strings.Join(msg, "\n"))
 }

@@ -6,30 +6,29 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 type S3Store struct {
-	s3Client *s3.S3
+	s3Client *s3.Client
 }
 
-func NewS3(sess *session.Session) *S3Store {
+func NewS3(cfg aws.Config) *S3Store {
 	return &S3Store{
-		s3Client: s3.New(sess),
+		s3Client: s3.NewFromConfig(cfg),
 	}
 }
 
 // Store stores object by key in the bucket.
 func (store *S3Store) Store(ctx context.Context, bucket, key string, body []byte) error {
-	_, err := store.s3Client.PutObjectWithContext(ctx, &s3.PutObjectInput{
+	if _, err := store.s3Client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:       aws.String(bucket),
 		Key:          aws.String(key),
 		Body:         bytes.NewReader(body),
-		StorageClass: aws.String(s3.StorageClassOnezoneIa),
-	})
-	if err != nil {
+		StorageClass: types.StorageClassOnezoneIa,
+	}); err != nil {
 		return fmt.Errorf("failed to PutObject to '%s': %w", bucket, err)
 	}
 	return nil
@@ -59,7 +58,7 @@ func WithPrefix(prefix string) ListKeysOption {
 func (store *S3Store) ListKeys(ctx context.Context, bucket string, opts ...ListKeysOption) ([]string, error) {
 	options := getListKeysOptions(opts)
 
-	response, err := store.s3Client.ListObjectsV2WithContext(ctx, &s3.ListObjectsV2Input{
+	response, err := store.s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 		Bucket: aws.String(bucket),
 		Prefix: options.prefix,
 	})
@@ -77,7 +76,7 @@ func (store *S3Store) ListKeys(ctx context.Context, bucket string, opts ...ListK
 
 // Get returns object content by key from the bucket.
 func (store *S3Store) Get(ctx context.Context, bucket, key string) ([]byte, error) {
-	response, err := store.s3Client.GetObjectWithContext(ctx, &s3.GetObjectInput{
+	response, err := store.s3Client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	})
