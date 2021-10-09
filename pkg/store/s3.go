@@ -11,6 +11,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+// verify interface
+var _ Storage = &S3Store{}
+
 type S3Store struct {
 	s3Client *s3.Client
 }
@@ -32,26 +35,6 @@ func (store *S3Store) Store(ctx context.Context, bucket, key string, body []byte
 		return fmt.Errorf("failed to PutObject to '%s': %w", bucket, err)
 	}
 	return nil
-}
-
-type listKeysOptions struct {
-	prefix *string
-}
-
-type ListKeysOption func(*listKeysOptions)
-
-func getListKeysOptions(opts []ListKeysOption) *listKeysOptions {
-	options := &listKeysOptions{}
-	for _, applyOption := range opts {
-		applyOption(options)
-	}
-	return options
-}
-
-func WithPrefix(prefix string) ListKeysOption {
-	return func(options *listKeysOptions) {
-		options.prefix = &prefix
-	}
 }
 
 // ListKeys returns up to 1000 keys from the bucket.

@@ -3,12 +3,12 @@ module lunch
 go 1.17
 
 require (
-	github.com/avelino/slugify v0.0.0-20180501145920-855f152bd774
 	github.com/aws/aws-lambda-go v1.27.0
 	github.com/aws/aws-sdk-go-v2 v1.9.1
 	github.com/aws/aws-sdk-go-v2/config v1.8.2
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.16.0
 	github.com/hetiansu5/urlquery v1.2.7
+	github.com/montanaflynn/stats v0.6.6
 )
 
 require (
@@ -21,6 +21,4 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.4.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.7.1 // indirect
 	github.com/aws/smithy-go v1.8.0 // indirect
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/text v0.3.7 // indirect
 )

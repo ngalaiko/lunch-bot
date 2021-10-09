@@ -9,18 +9,18 @@ import (
 )
 
 type Store struct {
-	storage    *store.S3Store
+	storage    store.Storage
 	bucketName string
 }
 
-func NewStore(storage *store.S3Store) *Store {
+func NewStore(storage store.Storage) *Store {
 	return &Store{
 		storage:    storage,
 		bucketName: "lunch-places",
 	}
 }
 
-func (ps *Store) Add(ctx context.Context, place *Place) error {
+func (ps *Store) Store(ctx context.Context, place *Place) error {
 	jsonPlace, err := json.Marshal(place)
 	if err != nil {
 		return fmt.Errorf("failed to marshal place: %w", err)
@@ -41,7 +41,7 @@ func (ps *Store) ListNames(ctx context.Context) ([]string, error) {
 	return names, nil
 }
 
-func (ps *Store) Get(ctx context.Context, id string) (*Place, error) {
+func (ps *Store) GetByName(ctx context.Context, id string) (*Place, error) {
 	rawPlace, err := ps.storage.Get(ctx, ps.bucketName, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get place from storage: %w", err)

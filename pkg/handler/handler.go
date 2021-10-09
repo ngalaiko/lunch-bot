@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"lunch/pkg/lunch"
 	"lunch/pkg/request"
@@ -65,7 +66,7 @@ func Handle(ctx context.Context, req events.APIGatewayProxyRequest) (*events.API
 }
 
 func handleRoll(ctx context.Context) (*events.APIGatewayProxyResponse, error) {
-	place, err := roller.Roll(ctx)
+	place, err := roller.Roll(ctx, time.Now())
 	switch {
 	case err == nil:
 		return response.InChannel(fmt.Sprintf("Today's lunch place is... %s!", place.Name))
