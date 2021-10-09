@@ -64,11 +64,16 @@ func (r *Roller) Roll(ctx context.Context, now time.Time) (*places.Place, error)
 		return nil, fmt.Errorf("expected to find who in the context")
 	}
 
-	if err := r.checkRules(ctx, user, now); err != nil {
+	rollsHistory, err := r.rollsStore.ListRolls(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list rolls: %w", err)
+	}
+
+	if err := r.checkRules(ctx, user, rollsHistory, now); err != nil {
 		return nil, fmt.Errorf("failed to validate rules: %w", err)
 	}
 
-	place, err := r.pickRandomPlace(ctx, now)
+	place, err := r.pickRandomPlace(ctx, rollsHistory, now)
 	if err != nil {
 		return nil, fmt.Errorf("failed to pick random place: %w", err)
 	}
@@ -84,15 +89,10 @@ func (r *Roller) storeResult(ctx context.Context, user *users.User, place *place
 	return r.rollsStore.Store(ctx, rolls.NewRoll(user, place.Name, now))
 }
 
-func (r *Roller) pickRandomPlace(ctx context.Context, now time.Time) (*places.Place, error) {
+func (r *Roller) pickRandomPlace(ctx context.Context, rollsHistory []*rolls.Roll, now time.Time) (*places.Place, error) {
 	allNames, err := r.placesStore.ListNames(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list names: %w", err)
-	}
-
-	rollsHistory, err := r.rollsStore.ListRolls(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list rolls: %w", err)
 	}
 
 	weights := getWeights(allNames, rollsHistory, now)
@@ -159,17 +159,17 @@ func getWeights(allNames []string, rollsHistory []*rolls.Roll, now time.Time) []
 	return weights
 }
 
-func (r *Roller) checkRules(ctx context.Context, user *users.User, now time.Time) error {
-	rollsThisWeek, err := r.rollsStore.ListThisWeekRolls(ctx, now)
-	if err != nil {
-		return fmt.Errorf("failed to list this week rolls: %w", err)
-	}
-
+func (r *Roller) checkRules(ctx context.Context, user *users.User, rollsHistory []*rolls.Roll, now time.Time) error {
+	year, week := now.ISOWeek()
 	rollsByWeekday := map[time.Weekday][]*rolls.Roll{}
-
-	for _, roll := range rollsThisWeek {
-		weekday := roll.Time.Weekday()
-		rollsByWeekday[weekday] = append(rollsByWeekday[weekday], roll)
+	for _, roll := range rollsHistory {
+		rollYear, rollWeek := roll.Time.ISOWeek()
+		sameYear := rollYear == year
+		sameWeek := rollWeek == week
+		if sameYear && sameWeek {
+			weekday := roll.Time.Weekday()
+			rollsByWeekday[weekday] = append(rollsByWeekday[weekday], roll)
+		}
 	}
 
 	firstRollToday := len(rollsByWeekday[now.Weekday()]) == 0

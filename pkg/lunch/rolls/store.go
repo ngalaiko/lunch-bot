@@ -3,7 +3,6 @@ package rolls
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"lunch/pkg/store"
 )
@@ -44,25 +43,4 @@ func (rs *Store) ListRolls(ctx context.Context) ([]*Roll, error) {
 
 	return rolls, nil
 
-}
-
-func (rs *Store) ListThisWeekRolls(ctx context.Context, now time.Time) ([]*Roll, error) {
-	year, week := now.ISOWeek()
-	prefix := fmt.Sprintf("%d/%d/", year, week)
-
-	keys, err := rs.storage.ListKeys(ctx, rs.bucketName, store.WithPrefix(prefix))
-	if err != nil {
-		return nil, fmt.Errorf("failed to list keys from storage: %w", err)
-	}
-
-	rolls := make([]*Roll, 0, len(keys))
-	for _, key := range keys {
-		roll, err := rollFromKey(key)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse key: %w", err)
-		}
-		rolls = append(rolls, roll)
-	}
-
-	return rolls, nil
 }
