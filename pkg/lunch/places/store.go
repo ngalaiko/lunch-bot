@@ -26,23 +26,27 @@ func (ps *Store) Store(ctx context.Context, place *Place) error {
 		return fmt.Errorf("failed to marshal place: %w", err)
 	}
 
-	if err := ps.storage.Store(ctx, ps.bucketName, place.Name, jsonPlace); err != nil {
+	if err := ps.storage.Store(ctx, ps.bucketName, string(place.Name), jsonPlace); err != nil {
 		return fmt.Errorf("failed to store place in a storage: %w", err)
 	}
 
 	return nil
 }
 
-func (ps *Store) ListNames(ctx context.Context) ([]string, error) {
-	names, err := ps.storage.ListKeys(ctx, ps.bucketName)
+func (ps *Store) ListNames(ctx context.Context) ([]Name, error) {
+	keys, err := ps.storage.ListKeys(ctx, ps.bucketName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list keys from storage: %w", err)
+	}
+	names := make([]Name, len(keys))
+	for i, key := range keys {
+		names[i] = Name(key)
 	}
 	return names, nil
 }
 
-func (ps *Store) GetByName(ctx context.Context, id string) (*Place, error) {
-	rawPlace, err := ps.storage.Get(ctx, ps.bucketName, id)
+func (ps *Store) GetByName(ctx context.Context, name Name) (*Place, error) {
+	rawPlace, err := ps.storage.Get(ctx, ps.bucketName, string(name))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get place from storage: %w", err)
 	}

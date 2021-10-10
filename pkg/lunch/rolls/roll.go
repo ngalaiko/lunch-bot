@@ -5,19 +5,20 @@ import (
 	"strings"
 	"time"
 
+	"lunch/pkg/lunch/places"
 	"lunch/pkg/users"
 )
 
 type Roll struct {
 	UserID    string
-	PlaceName string
+	PlaceName places.Name
 	Time      time.Time
 }
 
-func NewRoll(user *users.User, placeID string, now time.Time) *Roll {
+func NewRoll(user *users.User, placeName places.Name, now time.Time) *Roll {
 	return &Roll{
 		UserID:    user.ID,
-		PlaceName: placeID,
+		PlaceName: placeName,
 		Time:      now,
 	}
 }
@@ -33,7 +34,7 @@ func rollFromKey(key string) (*Roll, error) {
 	}
 	return &Roll{
 		UserID:    parts[3],
-		PlaceName: parts[4],
+		PlaceName: places.Name(parts[4]),
 		Time:      t,
 	}, nil
 }

@@ -6,13 +6,15 @@ import (
 	"lunch/pkg/users"
 )
 
+type Name string
+
 type Place struct {
-	Name    string      `json:"name"`
+	Name    Name        `json:"name"`
 	AddedAt time.Time   `json:"added_at"`
 	AddedBy *users.User `json:"added_by"`
 }
 
-func NewPlace(name string, user *users.User) *Place {
+func NewPlace(name Name, user *users.User) *Place {
 	return &Place{
 		Name:    name,
 		AddedBy: user,
