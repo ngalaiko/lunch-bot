@@ -19,8 +19,7 @@ var (
 )
 
 const (
-	hoursInADay   = 24
-	defaultWeight = 1.0
+	hoursInADay = 24
 )
 
 type Roller struct {
@@ -143,14 +142,14 @@ func getWeights(allNames []places.Name, history *rollsHistory, now time.Time) []
 	for i, name := range allNames {
 		lastRolledAt, wasRolled := history.LastRolled[name]
 		if !wasRolled {
-			weights[i] = defaultWeight
+			weights[i] = float64(namesTotal)
 		} else {
 			rolledAgo := now.Sub(lastRolledAt)
 			rolledDaysAgo := int(math.Floor(rolledAgo.Hours() / hoursInADay))
 			if rolledDaysAgo >= namesTotal {
-				weights[i] = defaultWeight
+				weights[i] = float64(namesTotal)
 			} else {
-				weights[i] = defaultWeight / float64(namesTotal-rolledDaysAgo)
+				weights[i] = float64(rolledDaysAgo) + 1
 			}
 		}
 	}
