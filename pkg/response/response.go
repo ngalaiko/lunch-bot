@@ -14,36 +14,23 @@ type response struct {
 	Text         string       `json:"text"`
 }
 
-type responseType string
-
-const (
-	responseTypeEphemeral responseType = "ephemeral"
-	responseTypeInChannel responseType = "in_channel"
-)
-
 // Ephemral sends a message back visible only by the caller.
-func Ephemral(text string) (*events.APIGatewayProxyResponse, error) {
-	return respondJSON(&response{
-		ResponseType: responseTypeEphemeral,
-		Text:         text,
-	})
+func Ephemral(sections ...*SectionBlock) (*events.APIGatewayProxyResponse, error) {
+	return respondJSON(newMessage(responseTypeEphemeral, sections...))
 }
 
 // InChannel sends a message back visible by everyone in the channel.
-func InChannel(text string) (*events.APIGatewayProxyResponse, error) {
-	return respondJSON(&response{
-		ResponseType: responseTypeInChannel,
-		Text:         text,
-	})
+func InChannel(sections ...*SectionBlock) (*events.APIGatewayProxyResponse, error) {
+	return respondJSON(newMessage(responseTypeInChannel, sections...))
 }
 
 func BadRequest(err error) (*events.APIGatewayProxyResponse, error) {
-	return Ephemral(err.Error())
+	return Ephemral(Section(PlainText(err.Error())))
 }
 
 func InternalServerError(err error) (*events.APIGatewayProxyResponse, error) {
 	log.Printf("[ERROR] %s", err)
-	return Ephemral("Sorry, that didn't work. Try again or contact the app administrator.")
+	return Ephemral(Section(PlainText("Sorry, that didn't work. Try again or contact the app administrator.")))
 }
 
 func respondJSON(body interface{}) (*events.APIGatewayProxyResponse, error) {

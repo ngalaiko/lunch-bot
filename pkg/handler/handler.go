@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"sort"
-	"strings"
 	"time"
 
 	"lunch/pkg/lunch"
@@ -71,11 +70,11 @@ func handleRoll(ctx context.Context) (*events.APIGatewayProxyResponse, error) {
 	place, err := roller.Roll(ctx, time.Now())
 	switch {
 	case err == nil:
-		return response.InChannel(fmt.Sprintf("Today's lunch place is... %s!", place.Name))
+		return response.InChannel(response.Section(response.Markdown("Today's lunch place is... *%s*!", place.Name)))
 	case errors.Is(err, lunch.ErrNoRerolls):
-		return response.Ephemral("You don't have any more rerolls this week")
+		return response.Ephemral(response.Section(response.PlainText("You don't have any more rerolls this week")))
 	case errors.Is(err, lunch.ErrNoPlaces):
-		return response.Ephemral("No places to choose from, add some!")
+		return response.Ephemral(response.Section(response.PlainText("No places to choose from, add some!")))
 	default:
 		return response.InternalServerError(err)
 	}
@@ -85,7 +84,7 @@ func handleAdd(ctx context.Context, place string) (*events.APIGatewayProxyRespon
 	if err := roller.NewPlace(ctx, place); err != nil {
 		return response.InternalServerError(err)
 	}
-	return response.Ephemral(fmt.Sprintf("%s added!", place))
+	return response.Ephemral(response.Section(response.Markdown("*%s* added!", place)))
 }
 
 func handleList(ctx context.Context) (*events.APIGatewayProxyResponse, error) {
@@ -111,10 +110,17 @@ func handleList(ctx context.Context) (*events.APIGatewayProxyResponse, error) {
 		return pp[i].Chance > pp[j].Chance
 	})
 
-	msg := []string{}
+	sections := []*response.SectionBlock{
+		response.Section(nil, response.Markdown("*Title*"), response.Markdown("*Odds*")),
+		response.Divider(),
+	}
 	for _, p := range pp {
-		msg = append(msg, fmt.Sprintf("• %s: %.2f%%", p.Name, p.Chance))
+		sections = append(sections, response.Section(
+			nil,
+			response.PlainText("%s", p.Name),
+			response.PlainText("%.2f%%", p.Chance)),
+		)
 	}
 
-	return response.Ephemral(strings.Join(msg, "\n"))
+	return response.Ephemral(sections...)
 }
