@@ -49,12 +49,36 @@ func (r *Roller) NewPlace(ctx context.Context, name string) error {
 	return nil
 }
 
-func (r *Roller) ListPlacesNames(ctx context.Context) ([]places.Name, error) {
-	names, err := r.placesStore.ListNames(ctx)
+func (r *Roller) ListChances(ctx context.Context, now time.Time) (map[places.Name]float64, error) {
+	allNames, err := r.placesStore.ListNames(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list names: %w", err)
 	}
-	return names, nil
+
+	if len(allNames) == 0 {
+		return nil, ErrNoPlaces
+	}
+
+	rollsHistory, err := r.rollsStore.ListRolls(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list rolls: %w", err)
+	}
+
+	history := buildHistory(rollsHistory, now)
+
+	weights := getWeights(allNames, history, now)
+	weightsSum := 0.0
+	for _, weight := range weights {
+		weightsSum += weight
+	}
+
+	chances := make(map[places.Name]float64, len(allNames))
+	for i, weight := range weights {
+		chance := weight / weightsSum * 100
+		chances[allNames[i]] = chance
+	}
+
+	return chances, nil
 }
 
 func (r *Roller) Roll(ctx context.Context, now time.Time) (*places.Place, error) {

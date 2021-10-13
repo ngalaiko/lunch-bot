@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 	"time"
 
 	"lunch/pkg/lunch"
+	"lunch/pkg/lunch/places"
 	"lunch/pkg/request"
 	"lunch/pkg/response"
 	"lunch/pkg/store"
@@ -87,13 +89,32 @@ func handleAdd(ctx context.Context, place string) (*events.APIGatewayProxyRespon
 }
 
 func handleList(ctx context.Context) (*events.APIGatewayProxyResponse, error) {
-	names, err := roller.ListPlacesNames(ctx)
+	placeChances, err := roller.ListChances(ctx, time.Now())
 	if err != nil {
 		return response.InternalServerError(err)
 	}
-	msg := []string{"Places:", ""}
-	for _, name := range names {
-		msg = append(msg, fmt.Sprintf("• %s", name))
+
+	type placeChance struct {
+		Name   places.Name
+		Chance float64
 	}
+
+	pp := make([]placeChance, 0, len(placeChances))
+	for place, chance := range placeChances {
+		pp = append(pp, placeChance{
+			Name:   place,
+			Chance: chance,
+		})
+	}
+
+	sort.SliceStable(pp, func(i, j int) bool {
+		return pp[i].Chance > pp[j].Chance
+	})
+
+	msg := []string{}
+	for _, p := range pp {
+		msg = append(msg, fmt.Sprintf("• %s: %.2f%%", p.Name, p.Chance))
+	}
+
 	return response.Ephemral(strings.Join(msg, "\n"))
 }
