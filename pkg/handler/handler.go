@@ -59,8 +59,6 @@ func Handle(ctx context.Context, req events.APIGatewayProxyRequest) (*events.API
 		return handleAdd(ctx, command.Text)
 	case "/list":
 		return handleList(ctx)
-	case "/boost":
-		return handeBoost(ctx)
 	default:
 		return response.BadRequest(fmt.Errorf("unknown command"))
 	}
@@ -84,5 +82,5 @@ func handleAdd(ctx context.Context, place string) (*events.APIGatewayProxyRespon
 	if err := roller.NewPlace(ctx, place); err != nil {
 		return response.InternalServerError(err)
 	}
-	return response.Ephemral(response.Section(response.Markdown("*%s* added!", place)))
+	return response.Ephemral(response.Section(response.Markdown("*%s* added!", place), nil))
 }

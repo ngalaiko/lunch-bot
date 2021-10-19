@@ -10,41 +10,41 @@ const (
 )
 
 // https://api.slack.com/reference/messaging/composition-objects#text
-type textBlock struct {
+type TextBlock struct {
 	Type textBlockType `json:"type"`
 	Text string        `json:"text"`
 }
 
-func Markdown(format string, a ...interface{}) *textBlock {
-	return &textBlock{
+func Markdown(format string, a ...interface{}) *TextBlock {
+	return &TextBlock{
 		Type: textBlockTypeMarkdown,
 		Text: fmt.Sprintf(format, a...),
 	}
 }
 
-func PlainText(format string, a ...interface{}) *textBlock {
-	return &textBlock{
+func PlainText(format string, a ...interface{}) *TextBlock {
+	return &TextBlock{
 		Type: textBlockTypePlainText,
 		Text: fmt.Sprintf(format, a...),
 	}
 }
 
 type Option struct {
-	Text  *textBlock `json:"text"`
+	Text  *TextBlock `json:"text"`
 	Value string     `json:"value"`
 }
 
 type accessoryType string
 
 const (
-	accessoryTypeStaticSelect accessoryType = "static_select"
+	accessoryTypeButton accessoryType = "button"
 )
 
 type accessory struct {
-	ActionID    string        `json:"action_id"`
-	Type        accessoryType `json:"type"`
-	Placeholder *textBlock    `json:"placeholder"`
-	Options     []*Option     `json:"options"`
+	Type     accessoryType `json:"type"`
+	Text     *TextBlock    `json:"text"`
+	ActionID string        `json:"action_id"`
+	Value    string        `json:"value"`
 }
 
 type blockObjectType string
@@ -56,8 +56,8 @@ const (
 
 type Block struct {
 	Type      blockObjectType `json:"type"`
-	Text      *textBlock      `json:"text,omitempty"`
-	Fields    []*textBlock    `json:"fields,omitempty"`
+	Text      *TextBlock      `json:"text,omitempty"`
+	Fields    []*TextBlock    `json:"fields,omitempty"`
 	Accessory *accessory      `json:"accessory,omitempty"`
 }
 
@@ -70,40 +70,31 @@ func Divider() *Block {
 type sectionOption func(*Block)
 
 // https://api.slack.com/reference/block-kit/blocks#section
-func Section(text *textBlock, fields ...*textBlock) *Block {
-	b := &Block{
-		Type:   blockObjectTypeSection,
-		Text:   text,
-		Fields: fields,
-	}
-	return b
-}
-
-// https://api.slack.com/reference/block-kit/blocks#section
-func Select(text *textBlock, options ...sectionOption) *Block {
-	b := Section(text)
+func SectionFields(fields []*TextBlock, options ...sectionOption) *Block {
+	b := Section(nil, fields...)
 	for _, apply := range options {
 		apply(b)
 	}
 	return b
 }
 
-// https://api.slack.com/reference/block-kit/block-elements#static_select
-func SelectOption(text *textBlock, value string) *Option {
-	return &Option{
-		Text:  text,
-		Value: value,
+// https://api.slack.com/reference/block-kit/blocks#section
+func Section(text *TextBlock, fields ...*TextBlock) *Block {
+	return &Block{
+		Type:   blockObjectTypeSection,
+		Text:   text,
+		Fields: fields,
 	}
 }
 
-// https://api.slack.com/reference/block-kit/block-elements#static_select
-func Static(placeholeer *textBlock, actionID string, options ...*Option) sectionOption {
+// https://api.slack.com/reference/block-kit/block-elements#button
+func WithButton(text *TextBlock, actionID, value string) sectionOption {
 	return func(b *Block) {
 		b.Accessory = &accessory{
-			ActionID:    actionID,
-			Type:        accessoryTypeStaticSelect,
-			Placeholder: placeholeer,
-			Options:     options,
+			Text:     text,
+			Type:     accessoryTypeButton,
+			ActionID: actionID,
+			Value:    value,
 		}
 	}
 }

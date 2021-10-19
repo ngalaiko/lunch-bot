@@ -40,11 +40,13 @@ func handleList(ctx context.Context) (*events.APIGatewayProxyResponse, error) {
 	}
 
 	for _, p := range pp {
-		blocks = append(blocks, response.Section(
-			nil,
-			response.PlainText("%s", p.Name),
-			response.PlainText("%.2f%%", p.Chance)),
-		)
+		blocks = append(blocks, response.SectionFields(
+			[]*response.TextBlock{
+				response.PlainText("%s", p.Name),
+				response.PlainText("%.2f%%", p.Chance),
+			},
+			response.WithButton(response.PlainText("Boost"), "boost", string(p.Name)),
+		))
 	}
 
 	return response.Ephemral(blocks...)
