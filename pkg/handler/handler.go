@@ -5,11 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"sort"
 	"time"
 
 	"lunch/pkg/lunch"
-	"lunch/pkg/lunch/places"
 	"lunch/pkg/request"
 	"lunch/pkg/response"
 	"lunch/pkg/store"
@@ -61,6 +59,8 @@ func Handle(ctx context.Context, req events.APIGatewayProxyRequest) (*events.API
 		return handleAdd(ctx, command.Text)
 	case "/list":
 		return handleList(ctx)
+	case "/boost":
+		return handeBoost(ctx)
 	default:
 		return response.BadRequest(fmt.Errorf("unknown command"))
 	}
@@ -85,42 +85,4 @@ func handleAdd(ctx context.Context, place string) (*events.APIGatewayProxyRespon
 		return response.InternalServerError(err)
 	}
 	return response.Ephemral(response.Section(response.Markdown("*%s* added!", place)))
-}
-
-func handleList(ctx context.Context) (*events.APIGatewayProxyResponse, error) {
-	placeChances, err := roller.ListChances(ctx, time.Now())
-	if err != nil {
-		return response.InternalServerError(err)
-	}
-
-	type placeChance struct {
-		Name   places.Name
-		Chance float64
-	}
-
-	pp := make([]placeChance, 0, len(placeChances))
-	for place, chance := range placeChances {
-		pp = append(pp, placeChance{
-			Name:   place,
-			Chance: chance,
-		})
-	}
-
-	sort.SliceStable(pp, func(i, j int) bool {
-		return pp[i].Chance > pp[j].Chance
-	})
-
-	sections := []*response.SectionBlock{
-		response.Section(nil, response.Markdown("*Title*"), response.Markdown("*Odds*")),
-		response.Divider(),
-	}
-	for _, p := range pp {
-		sections = append(sections, response.Section(
-			nil,
-			response.PlainText("%s", p.Name),
-			response.PlainText("%.2f%%", p.Chance)),
-		)
-	}
-
-	return response.Ephemral(sections...)
 }

@@ -49,6 +49,14 @@ func (r *Roller) NewPlace(ctx context.Context, name string) error {
 	return nil
 }
 
+func (r *Roller) ListPlaces(ctx context.Context) ([]places.Name, error) {
+	names, err := r.placesStore.ListNames(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list names: %w", err)
+	}
+	return names, nil
+}
+
 func (r *Roller) ListChances(ctx context.Context, now time.Time) (map[places.Name]float64, error) {
 	allNames, err := r.placesStore.ListNames(ctx)
 	if err != nil {

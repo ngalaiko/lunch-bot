@@ -15,12 +15,12 @@ type response struct {
 }
 
 // Ephemral sends a message back visible only by the caller.
-func Ephemral(sections ...*SectionBlock) (*events.APIGatewayProxyResponse, error) {
+func Ephemral(sections ...*Block) (*events.APIGatewayProxyResponse, error) {
 	return respondJSON(newMessage(responseTypeEphemeral, sections...))
 }
 
 // InChannel sends a message back visible by everyone in the channel.
-func InChannel(sections ...*SectionBlock) (*events.APIGatewayProxyResponse, error) {
+func InChannel(sections ...*Block) (*events.APIGatewayProxyResponse, error) {
 	return respondJSON(newMessage(responseTypeInChannel, sections...))
 }
 
@@ -38,6 +38,7 @@ func respondJSON(body interface{}) (*events.APIGatewayProxyResponse, error) {
 	if err != nil {
 		return InternalServerError(fmt.Errorf("failed to marshal response: %w", err))
 	}
+	log.Printf("[TRACE] response: %s", string(bytes))
 	return &events.APIGatewayProxyResponse{
 		Body: string(bytes),
 		Headers: map[string]string{
