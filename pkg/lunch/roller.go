@@ -3,10 +3,10 @@ package lunch
 import (
 	"context"
 	"fmt"
-	"math"
 	"math/rand"
 	"time"
 
+	"lunch/pkg/lunch/boosts"
 	"lunch/pkg/lunch/places"
 	"lunch/pkg/lunch/rolls"
 	"lunch/pkg/store"
@@ -14,17 +14,14 @@ import (
 )
 
 var (
-	ErrNoRerolls = fmt.Errorf("no rerolls left")
-	ErrNoPlaces  = fmt.Errorf("no places to choose from")
-)
-
-const (
-	hoursInADay = 24
+	ErrNoPoints = fmt.Errorf("no points left")
+	ErrNoPlaces = fmt.Errorf("no places to choose from")
 )
 
 type Roller struct {
 	placesStore *places.Store
 	rollsStore  *rolls.Store
+	boostsStore *boosts.Store
 
 	rand *rand.Rand
 }
@@ -33,6 +30,7 @@ func New(storage store.Storage) *Roller {
 	return &Roller{
 		placesStore: places.NewStore(storage),
 		rollsStore:  rolls.NewStore(storage),
+		boostsStore: boosts.NewStore(storage),
 		rand:        rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 }
@@ -46,6 +44,7 @@ func (r *Roller) NewPlace(ctx context.Context, name string) error {
 	if err := r.placesStore.Store(ctx, places.NewPlace(places.Name(name), user)); err != nil {
 		return fmt.Errorf("failed to store place: %w", err)
 	}
+
 	return nil
 }
 
@@ -67,14 +66,12 @@ func (r *Roller) ListChances(ctx context.Context, now time.Time) (map[places.Nam
 		return nil, ErrNoPlaces
 	}
 
-	rollsHistory, err := r.rollsStore.ListRolls(ctx)
+	history, err := r.buildHistory(ctx, now)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list rolls: %w", err)
+		return nil, fmt.Errorf("failed to build history")
 	}
 
-	history := buildHistory(rollsHistory, now)
-
-	weights := getWeights(allNames, history, now)
+	weights := history.getWeights(allNames, now)
 	weightsSum := 0.0
 	for _, weight := range weights {
 		weightsSum += weight
@@ -89,20 +86,41 @@ func (r *Roller) ListChances(ctx context.Context, now time.Time) (map[places.Nam
 	return chances, nil
 }
 
+func (r *Roller) Boost(ctx context.Context, name string, now time.Time) error {
+	user, ok := users.FromContext(ctx)
+	if !ok {
+		return fmt.Errorf("expected to find who in the context")
+	}
+
+	history, err := r.buildHistory(ctx, now)
+	if err != nil {
+		return fmt.Errorf("failed to build history: %w", err)
+	}
+
+	if err := history.CanBoost(user, now); err != nil {
+		return fmt.Errorf("can't boost any more: %w", err)
+	}
+
+	boost := boosts.NewBoost(user, places.Name(name), now)
+	if err := r.boostsStore.Store(ctx, boost); err != nil {
+		return fmt.Errorf("failed to store boost: %w", err)
+	}
+
+	return nil
+}
+
 func (r *Roller) Roll(ctx context.Context, now time.Time) (*places.Place, error) {
 	user, ok := users.FromContext(ctx)
 	if !ok {
 		return nil, fmt.Errorf("expected to find who in the context")
 	}
 
-	rollsHistory, err := r.rollsStore.ListRolls(ctx)
+	history, err := r.buildHistory(ctx, now)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list rolls: %w", err)
+		return nil, fmt.Errorf("failed to build history: %w", err)
 	}
 
-	history := buildHistory(rollsHistory, now)
-
-	if err := r.checkRules(user, history, now); err != nil {
+	if err := history.CanRoll(user, now); err != nil {
 		return nil, fmt.Errorf("failed to validate rules: %w", err)
 	}
 
@@ -132,7 +150,7 @@ func (r *Roller) pickRandomPlace(ctx context.Context, history *rollsHistory, now
 		return nil, ErrNoPlaces
 	}
 
-	weights := getWeights(allNames, history, now)
+	weights := history.getWeights(allNames, now)
 	randomIndex := weightedRandom(r.rand, weights)
 	randomPlaceName := allNames[randomIndex]
 	place, err := r.placesStore.GetByName(ctx, randomPlaceName)
@@ -160,79 +178,4 @@ func weightedRandom(rand *rand.Rand, weights []float64) int {
 
 	// never happens
 	return -1
-}
-
-// getWeights returns a list of weights for places to choose from.
-// higher weights means higher chance of choosing a place.
-// list of weights is the same length as list of allNames,
-// where weights[i] is the weight for allNames[i].
-//
-// weight are distributed in a way so that the most recent rolls get the lowest weight.
-func getWeights(allNames []places.Name, history *rollsHistory, now time.Time) []float64 {
-	namesTotal := len(allNames)
-	weights := make([]float64, namesTotal)
-	for i, name := range allNames {
-		lastRolledAt, wasRolled := history.LastRolled[name]
-		if !wasRolled {
-			weights[i] = float64(namesTotal)
-		} else {
-			rolledAgo := now.Sub(lastRolledAt)
-			rolledDaysAgo := int(math.Floor(rolledAgo.Hours() / hoursInADay))
-			if rolledDaysAgo >= namesTotal {
-				weights[i] = float64(namesTotal)
-			} else {
-				weights[i] = float64(rolledDaysAgo) + 1
-			}
-		}
-	}
-	return weights
-}
-
-func (r *Roller) checkRules(user *users.User, history *rollsHistory, now time.Time) error {
-	firstRollToday := len(history.ThisWeekRolls[now.Weekday()]) == 0
-	if firstRollToday {
-		// anyone can make the first roll a day
-		return nil
-	}
-
-	for _, rolls := range history.ThisWeekRolls {
-		if len(rolls) <= 1 {
-			continue
-		}
-		for _, roll := range rolls[1:] {
-			if roll.UserID == user.ID {
-				// consecutive rolls a day are rerolls, only one reroll per week is allowed
-				return ErrNoRerolls
-			}
-		}
-	}
-	return nil
-}
-
-type rollsHistory struct {
-	ThisWeekRolls map[time.Weekday][]*rolls.Roll
-	LastRolled    map[places.Name]time.Time
-}
-
-func buildHistory(allRolls []*rolls.Roll, now time.Time) *rollsHistory {
-	year, week := now.ISOWeek()
-	thisWeekRolls := map[time.Weekday][]*rolls.Roll{}
-	lastRolled := map[places.Name]time.Time{}
-	for _, roll := range allRolls {
-		rollYear, rollWeek := roll.Time.ISOWeek()
-		sameYear := rollYear == year
-		sameWeek := rollWeek == week
-		if sameYear && sameWeek {
-			weekday := roll.Time.Weekday()
-			thisWeekRolls[weekday] = append(thisWeekRolls[weekday], roll)
-		}
-
-		if roll.Time.After(lastRolled[roll.PlaceName]) {
-			lastRolled[roll.PlaceName] = roll.Time
-		}
-	}
-	return &rollsHistory{
-		ThisWeekRolls: thisWeekRolls,
-		LastRolled:    lastRolled,
-	}
 }

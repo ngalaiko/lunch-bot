@@ -2,12 +2,15 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"sort"
 	"time"
 
 	"lunch/pkg/lunch"
+	"lunch/pkg/lunch/places"
 	"lunch/pkg/request"
 	"lunch/pkg/response"
 	"lunch/pkg/store"
@@ -18,7 +21,27 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 )
 
-type CommandRequest struct {
+type actionUser struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type action struct {
+	ActionID string `json:"action_id"`
+	Value    string `json:"value"`
+}
+
+type actionsRequest struct {
+	User        *actionUser `json:"user"`
+	Actions     []*action   `json:"actions"`
+	ResponseUrl string      `json:"response_url"`
+}
+
+type payload struct {
+	Payload string `query:"payload"`
+}
+
+type commandRequest struct {
 	Command  string `query:"command"`
 	Text     string `query:"text"`
 	UserID   string `query:"user_id"`
@@ -40,11 +63,64 @@ var (
 )
 
 func Handle(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
-	command := &CommandRequest{}
-	if err := request.Parse(req, &command); err != nil {
-		return response.BadRequest(err)
+	payload := &payload{}
+	if err := request.Parse(req, payload); err == nil && payload.Payload != "" {
+		return handlePayload(ctx, payload)
 	}
 
+	command := &commandRequest{}
+	if err := request.Parse(req, command); err == nil {
+		return handleCommand(ctx, command)
+	}
+
+	return response.BadRequest(fmt.Errorf("unknown request"))
+}
+
+func handlePayload(ctx context.Context, payload *payload) (*events.APIGatewayProxyResponse, error) {
+	r := &actionsRequest{}
+	if err := json.Unmarshal([]byte(payload.Payload), r); err != nil {
+		return response.BadRequest(fmt.Errorf("failed to parse payload"))
+	}
+	ctx = users.NewContext(ctx, &users.User{
+		ID:   r.User.ID,
+		Name: r.User.Name,
+	})
+	return handleActions(ctx, r.ResponseUrl, r.Actions...)
+}
+
+func handleActions(ctx context.Context, responseURL string, actions ...*action) (*events.APIGatewayProxyResponse, error) {
+	if len(actions) != 1 {
+		return response.BadRequest(fmt.Errorf("unexpected number of actions: %d", len(actions)))
+	}
+	action := actions[0]
+
+	log.Printf("[INFO] incoming action: %+v", action)
+	switch action.ActionID {
+	case "boost":
+		return handleBoost(ctx, responseURL, action.Value)
+	default:
+		return response.BadRequest(fmt.Errorf("not implemented"))
+	}
+}
+
+func handleBoost(ctx context.Context, responseURL string, place string) (*events.APIGatewayProxyResponse, error) {
+	err := roller.Boost(ctx, place, time.Now())
+	switch {
+	case err == nil:
+		responseBlocks, err := list(ctx)
+		if err != nil {
+			return response.InternalServerError(err)
+		}
+		return response.ReplaceEphemralURL(responseURL, responseBlocks...)
+	case errors.Is(err, lunch.ErrNoPoints):
+		msg := response.Section(response.PlainText("Failed to boost: no more points left"))
+		return response.EphemralURL(responseURL, msg)
+	default:
+		return response.InternalServerError(err)
+	}
+}
+
+func handleCommand(ctx context.Context, command *commandRequest) (*events.APIGatewayProxyResponse, error) {
 	log.Printf("[INFO] incoming command: %+v", command)
 
 	ctx = users.NewContext(ctx, &users.User{
@@ -69,8 +145,8 @@ func handleRoll(ctx context.Context) (*events.APIGatewayProxyResponse, error) {
 	switch {
 	case err == nil:
 		return response.InChannel(response.Section(response.Markdown("Today's lunch place is... *%s*!", place.Name)))
-	case errors.Is(err, lunch.ErrNoRerolls):
-		return response.Ephemral(response.Section(response.PlainText("You don't have any more rerolls this week")))
+	case errors.Is(err, lunch.ErrNoPoints):
+		return response.Ephemral(response.Section(response.PlainText("Failed to roll: no more points left")))
 	case errors.Is(err, lunch.ErrNoPlaces):
 		return response.Ephemral(response.Section(response.PlainText("No places to choose from, add some!")))
 	default:
@@ -83,4 +159,53 @@ func handleAdd(ctx context.Context, place string) (*events.APIGatewayProxyRespon
 		return response.InternalServerError(err)
 	}
 	return response.Ephemral(response.Section(response.Markdown("*%s* added!", place), nil))
+}
+
+func handleList(ctx context.Context) (*events.APIGatewayProxyResponse, error) {
+	responseBlocks, err := list(ctx)
+	if err != nil {
+		return response.InternalServerError(err)
+	}
+	return response.Ephemral(responseBlocks...)
+}
+
+func list(ctx context.Context) ([]*response.Block, error) {
+	placeChances, err := roller.ListChances(ctx, time.Now())
+	if err != nil {
+		return nil, err
+	}
+
+	type placeChance struct {
+		Name   places.Name
+		Chance float64
+	}
+
+	pp := make([]placeChance, 0, len(placeChances))
+	for place, chance := range placeChances {
+		pp = append(pp, placeChance{
+			Name:   place,
+			Chance: chance,
+		})
+	}
+
+	sort.SliceStable(pp, func(i, j int) bool {
+		return pp[i].Chance > pp[j].Chance
+	})
+
+	blocks := []*response.Block{
+		response.Section(nil, response.Markdown("*Title*"), response.Markdown("*Odds*")),
+		response.Divider(),
+	}
+
+	for _, p := range pp {
+		blocks = append(blocks, response.SectionFields(
+			[]*response.TextBlock{
+				response.PlainText("%s", p.Name),
+				response.PlainText("%.2f%%", p.Chance),
+			},
+			response.WithButton(response.PlainText("Boost"), "boost", string(p.Name)),
+		))
+	}
+
+	return blocks, nil
 }

@@ -1,4 +1,4 @@
-package lunch_test
+package lunch
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"lunch/pkg/lunch"
 	"lunch/pkg/store"
 	"lunch/pkg/users"
 )
@@ -18,11 +17,58 @@ func TestRoll_noPlaces(t *testing.T) {
 	t.Parallel()
 
 	ctx := testContext(testUser())
-	roller := lunch.New(store.NewInMemory())
+	roller := New(store.NewInMemory())
 
 	place, err := roller.Roll(ctx, time.Now())
-	assertError(t, lunch.ErrNoPlaces, err)
+	assertError(t, ErrNoPlaces, err)
 	assertNil(t, place)
+}
+
+func TestRoll_reroll_then_boost(t *testing.T) {
+	t.Parallel()
+
+	today := time.Date(2021, time.September, 6, 9, 0, 0, 0, time.UTC) // Monday
+
+	ctx := testContext(testUser())
+	roller := New(store.NewInMemory())
+	places := []string{"place1", "place2", "place3"}
+	for _, place := range places {
+		assertNoError(t, roller.NewPlace(ctx, place))
+	}
+
+	_, firstRollError := roller.Roll(ctx, today)
+	assertNoError(t, firstRollError)
+
+	_, firstRerollError := roller.Roll(ctx, today.Add(1*time.Minute))
+	assertNoError(t, firstRerollError)
+
+	firstBoostError := roller.Boost(ctx, places[0], today.Add(2*time.Minute))
+	assertError(t, ErrNoPoints, firstBoostError)
+}
+
+func TestRoll_boost_then_reroll(t *testing.T) {
+	t.Parallel()
+
+	today := time.Date(2021, time.September, 6, 9, 0, 0, 0, time.UTC) // Monday
+
+	ctx := testContext(testUser())
+	roller := New(store.NewInMemory())
+	places := []string{"place1", "place2", "place3"}
+	for _, place := range places {
+		assertNoError(t, roller.NewPlace(ctx, place))
+	}
+
+	_, firstRollError := roller.Roll(ctx, today)
+	assertNoError(t, firstRollError)
+
+	firstBoostError := roller.Boost(ctx, places[0], today.Add(1*time.Minute))
+	assertNoError(t, firstBoostError)
+
+	secondBoostError := roller.Boost(ctx, places[0], today.Add(2*time.Minute))
+	assertError(t, ErrNoPoints, secondBoostError)
+
+	_, firstRerollError := roller.Roll(ctx, today)
+	assertError(t, ErrNoPoints, firstRerollError)
 }
 
 func TestRoll_rerolls(t *testing.T) {
@@ -44,21 +90,21 @@ func TestRoll_rerolls(t *testing.T) {
 		{"second roll today - first reroll this week",
 			user1, today.Add(time.Minute), nil},
 		{"third roll today - second reroll this week",
-			user1, today.Add(2 * time.Minute), lunch.ErrNoRerolls},
+			user1, today.Add(2 * time.Minute), ErrNoPoints},
 		{"first roll tomorrow",
 			user1, today.Add(oneDay), nil},
 		{"second roll tomorrow - second reroll this week",
-			user1, today.Add(oneDay).Add(time.Minute), lunch.ErrNoRerolls},
+			user1, today.Add(oneDay).Add(time.Minute), ErrNoPoints},
 		{"first roll next week - allowed",
 			user1, today.Add(oneWeek), nil},
 		{"second roll next week - first reroll that week",
 			user1, today.Add(oneWeek).Add(time.Minute), nil},
 		{"third roll next week - second reroll that week",
-			user1, today.Add(oneWeek).Add(2 * time.Minute), lunch.ErrNoRerolls},
+			user1, today.Add(oneWeek).Add(2 * time.Minute), ErrNoPoints},
 	}
 
 	ctx := testContext(testUser())
-	roller := lunch.New(store.NewInMemory())
+	roller := New(store.NewInMemory())
 	places := []string{"place1", "place2", "place3"}
 	for _, place := range places {
 		assertNoError(t, roller.NewPlace(ctx, place))
@@ -120,4 +166,12 @@ func assertNoError(t *testing.T, err error) {
 	t.Helper()
 
 	assertError(t, nil, err)
+}
+
+func assertEqual(t *testing.T, expected, got interface{}) {
+	t.Helper()
+
+	if !reflect.DeepEqual(got, expected) {
+		t.Errorf("\nexpected: %+v\ngot: %+v", expected, got)
+	}
 }

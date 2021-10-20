@@ -110,8 +110,17 @@ const (
 // slash command response message
 // https://api.slack.com/interactivity/slash-commands#responding_to_commands
 type message struct {
-	ResponseType responseType `json:"response_type,omitempty"`
-	Blocks       []*Block     `json:"blocks,omitempty"`
+	ReplaceOriginal bool         `json:"replace_original"`
+	ResponseType    responseType `json:"response_type,omitempty"`
+	Blocks          []*Block     `json:"blocks,omitempty"`
+}
+
+func newReplaceMessage(rt responseType, sections ...*Block) *message {
+	return &message{
+		ReplaceOriginal: true,
+		ResponseType:    rt,
+		Blocks:          sections,
+	}
 }
 
 func newMessage(rt responseType, sections ...*Block) *message {

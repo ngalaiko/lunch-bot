@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/hetiansu5/urlquery"
@@ -16,6 +17,7 @@ func Parse(req events.APIGatewayProxyRequest, dist interface{}) error {
 	}
 
 	contentType := req.Headers["content-type"]
+	log.Printf("[TRACE] request: %s %s", contentType, string(body))
 	switch contentType {
 	case "application/json":
 		return parseJSON(body, dist)
