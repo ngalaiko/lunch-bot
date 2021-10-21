@@ -28,6 +28,8 @@ func TestRoll_reroll_then_boost(t *testing.T) {
 	t.Parallel()
 
 	today := time.Date(2021, time.September, 6, 9, 0, 0, 0, time.UTC) // Monday
+	oneDay := 24 * time.Hour
+	oneWeek := 7 * oneDay
 
 	ctx := testContext(testUser())
 	roller := New(store.NewInMemory())
@@ -44,12 +46,17 @@ func TestRoll_reroll_then_boost(t *testing.T) {
 
 	firstBoostError := roller.Boost(ctx, places[0], today.Add(2*time.Minute))
 	assertError(t, ErrNoPoints, firstBoostError)
+
+	nextWeekBoostError := roller.Boost(ctx, places[0], today.Add(oneWeek))
+	assertNoError(t, nextWeekBoostError)
 }
 
 func TestRoll_boost_then_reroll(t *testing.T) {
 	t.Parallel()
 
 	today := time.Date(2021, time.September, 6, 9, 0, 0, 0, time.UTC) // Monday
+	oneDay := 24 * time.Hour
+	oneWeek := 7 * oneDay
 
 	ctx := testContext(testUser())
 	roller := New(store.NewInMemory())
@@ -69,6 +76,9 @@ func TestRoll_boost_then_reroll(t *testing.T) {
 
 	_, firstRerollError := roller.Roll(ctx, today)
 	assertError(t, ErrNoPoints, firstRerollError)
+
+	nextWeekBoostError := roller.Boost(ctx, places[0], today.Add(oneWeek))
+	assertNoError(t, nextWeekBoostError)
 }
 
 func TestRoll_rerolls(t *testing.T) {

@@ -22,7 +22,7 @@ type rollsHistory struct {
 	ThisWeekBoosts []*boosts.Boost
 	ThisWeekRolls  map[time.Weekday][]*rolls.Roll
 	LastRolled     map[places.Name]time.Time
-	ActiveBoost    *boosts.Boost
+	ActiveBoosts   map[places.Name][]*boosts.Boost
 }
 
 func (r *Roller) buildHistory(ctx context.Context, now time.Time) (*rollsHistory, error) {
@@ -37,23 +37,6 @@ func (r *Roller) buildHistory(ctx context.Context, now time.Time) (*rollsHistory
 	}
 
 	year, week := now.ISOWeek()
-	thisWeekBoosts := []*boosts.Boost{}
-	var latestBoost *boosts.Boost
-	for _, boost := range allBoosts {
-		boostYear, boostWeek := boost.Time.ISOWeek()
-		sameYear := boostYear == year
-		sameWeek := boostWeek == week
-		if sameYear && sameWeek {
-			thisWeekBoosts = append(thisWeekBoosts, boost)
-		}
-
-		if latestBoost == nil {
-			latestBoost = boost
-		} else if boost.Time.After(latestBoost.Time) {
-			latestBoost = boost
-		}
-	}
-
 	thisWeekRolls := map[time.Weekday][]*rolls.Roll{}
 	lastRolled := map[places.Name]time.Time{}
 	var latestRoll *rolls.Roll
@@ -77,15 +60,21 @@ func (r *Roller) buildHistory(ctx context.Context, now time.Time) (*rollsHistory
 		}
 	}
 
-	// boosts lasts until the next roll
-	var activeBoost *boosts.Boost
-	if latestBoost != nil {
-		if latestRoll != nil {
-			if latestBoost.Time.After(latestRoll.Time) {
-				activeBoost = latestBoost
-			}
-		} else {
-			activeBoost = latestBoost
+	thisWeekBoosts := []*boosts.Boost{}
+	activeBoosts := map[places.Name][]*boosts.Boost{}
+	for _, boost := range allBoosts {
+		boostYear, boostWeek := boost.Time.ISOWeek()
+		sameYear := boostYear == year
+		sameWeek := boostWeek == week
+		if sameYear && sameWeek {
+			thisWeekBoosts = append(thisWeekBoosts, boost)
+		}
+
+		// boosts lasts until the next roll
+		if latestRoll == nil {
+			activeBoosts[boost.PlaceName] = append(activeBoosts[boost.PlaceName], boost)
+		} else if latestRoll.Time.Before(boost.Time) {
+			activeBoosts[boost.PlaceName] = append(activeBoosts[boost.PlaceName], boost)
 		}
 	}
 
@@ -93,7 +82,7 @@ func (r *Roller) buildHistory(ctx context.Context, now time.Time) (*rollsHistory
 		ThisWeekRolls:  thisWeekRolls,
 		ThisWeekBoosts: thisWeekBoosts,
 		LastRolled:     lastRolled,
-		ActiveBoost:    activeBoost,
+		ActiveBoosts:   activeBoosts,
 	}, nil
 }
 
@@ -167,7 +156,7 @@ func (h *rollsHistory) getWeights(allNames []places.Name, now time.Time) []float
 			}
 		}
 
-		if h.ActiveBoost != nil && h.ActiveBoost.PlaceName == name {
+		for i := 0; i < len(h.ActiveBoosts[name]); i++ {
 			weights[i] *= boostMultiplexer
 		}
 	}
