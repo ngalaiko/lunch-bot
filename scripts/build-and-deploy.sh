@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
-set -eo pipefail
+set -euo pipefail
 
-./deploy.sh $( ./build.sh )
+DIR="$(dirname $0)"
+
+$DIR/deploy.sh $( "$DIR/build.sh" )
