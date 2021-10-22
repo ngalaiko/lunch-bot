@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	hoursInADay      = 24
-	totalPoints      = 1
-	boostMultiplexer = 5
+	hoursInADay     = 24
+	totalPoints     = 1
+	boostMultiplier = 5
 )
 
 type rollsHistory struct {
@@ -156,8 +156,8 @@ func (h *rollsHistory) getWeights(allNames []places.Name, now time.Time) []float
 			}
 		}
 
-		for i := 0; i < len(h.ActiveBoosts[name]); i++ {
-			weights[i] *= boostMultiplexer
+		for range h.ActiveBoosts[name] {
+			weights[i] *= boostMultiplier
 		}
 	}
 	return weights
