@@ -111,10 +111,9 @@ func handleBoost(ctx context.Context, responseURL string, place string) (*events
 		if err != nil {
 			return response.InternalServerError(err)
 		}
-		return response.ReplaceEphemralURL(responseURL, responseBlocks...)
+		return response.ReplaceEphemeralURL(responseURL, "Boosting", responseBlocks...)
 	case errors.Is(err, lunch.ErrNoPoints):
-		msg := response.Section(response.PlainText("Failed to boost: no more points left"))
-		return response.EphemralURL(responseURL, msg)
+		return response.EphemeralURL(responseURL, "Failed to boost: no more points left")
 	default:
 		return response.InternalServerError(err)
 	}
@@ -144,11 +143,13 @@ func handleRoll(ctx context.Context) (*events.APIGatewayProxyResponse, error) {
 	place, err := roller.Roll(ctx, time.Now())
 	switch {
 	case err == nil:
-		return response.InChannel(response.Section(response.Markdown("Today's lunch place is... *%s*!", place.Name)))
+		return response.InChannel(
+			response.Text(fmt.Sprintf("Today's lunch place is... %s!", place.Name)),            // Used in notifications
+			response.Section(response.Markdown("Today's lunch place is... *%s*!", place.Name))) // Used in app
 	case errors.Is(err, lunch.ErrNoPoints):
-		return response.Ephemral(response.Section(response.PlainText("Failed to roll: no more points left")))
+		return response.Ephemeral("Failed to roll: no more points left")
 	case errors.Is(err, lunch.ErrNoPlaces):
-		return response.Ephemral(response.Section(response.PlainText("No places to choose from, add some!")))
+		return response.Ephemeral("No places to choose from, add some!")
 	default:
 		return response.InternalServerError(err)
 	}
@@ -158,7 +159,10 @@ func handleAdd(ctx context.Context, place string) (*events.APIGatewayProxyRespon
 	if err := roller.NewPlace(ctx, place); err != nil {
 		return response.InternalServerError(err)
 	}
-	return response.Ephemral(response.Section(response.Markdown("*%s* added!", place), nil))
+	return response.Ephemeral(
+		response.Text(fmt.Sprintf("%s added", place)),
+		response.Section(response.Markdown("*%s* added!", place), nil),
+	)
 }
 
 func handleList(ctx context.Context) (*events.APIGatewayProxyResponse, error) {
@@ -166,7 +170,7 @@ func handleList(ctx context.Context) (*events.APIGatewayProxyResponse, error) {
 	if err != nil {
 		return response.InternalServerError(err)
 	}
-	return response.Ephemral(responseBlocks...)
+	return response.Ephemeral("List", responseBlocks...)
 }
 
 func list(ctx context.Context) ([]*response.Block, error) {

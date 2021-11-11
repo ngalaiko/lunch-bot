@@ -10,38 +10,34 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 )
 
-type response struct {
-	ResponseType responseType `json:"response_type"`
-	Text         string       `json:"text"`
+// EphemeralURL sends a message back via response URL.
+func EphemeralURL(responseURL string, text Text, sections ...*Block) (*events.APIGatewayProxyResponse, error) {
+	return respondJSONURL(responseURL, newMessage(responseTypeEphemeral, text, sections...))
 }
 
-// EphemralURL sends a message back via response URL.
-func EphemralURL(responseURL string, sections ...*Block) (*events.APIGatewayProxyResponse, error) {
-	return respondJSONURL(responseURL, newMessage(responseTypeEphemeral, sections...))
+// ReplaceEphemeralURL sends a message back via response URL, replacing original message.
+func ReplaceEphemeralURL(responseURL string, text Text, sections ...*Block) (*events.APIGatewayProxyResponse, error) {
+	return respondJSONURL(responseURL, newReplaceMessage(responseTypeEphemeral, text, sections...))
 }
 
-// ReplaceEphemralURL sends a message back via response URL, replacing original message.
-func ReplaceEphemralURL(responseURL string, sections ...*Block) (*events.APIGatewayProxyResponse, error) {
-	return respondJSONURL(responseURL, newReplaceMessage(responseTypeEphemeral, sections...))
-}
-
-// Ephemral sends a message back visible only by the caller.
-func Ephemral(sections ...*Block) (*events.APIGatewayProxyResponse, error) {
-	return respondJSON(newMessage(responseTypeEphemeral, sections...))
+// Ephemeral sends a message back visible only by the caller.
+func Ephemeral(text Text, sections ...*Block) (*events.APIGatewayProxyResponse, error) {
+	return respondJSON(newMessage(responseTypeEphemeral, text, sections...))
 }
 
 // InChannel sends a message back visible by everyone in the channel.
-func InChannel(sections ...*Block) (*events.APIGatewayProxyResponse, error) {
-	return respondJSON(newMessage(responseTypeInChannel, sections...))
+func InChannel(text Text, sections ...*Block) (*events.APIGatewayProxyResponse, error) {
+	return respondJSON(newMessage(responseTypeInChannel, text, sections...))
 }
 
 func BadRequest(err error) (*events.APIGatewayProxyResponse, error) {
-	return Ephemral(Section(PlainText(err.Error())))
+	return Ephemeral(Text(err.Error()), Section(PlainText(err.Error())))
 }
 
 func InternalServerError(err error) (*events.APIGatewayProxyResponse, error) {
 	log.Printf("[ERROR] %s", err)
-	return Ephemral(Section(PlainText("Sorry, that didn't work. Try again or contact the app administrator.")))
+	msg := "Sorry, that didn't work. Try again or contact the app administrator."
+	return Ephemeral(Text(msg), Section(PlainText(msg)))
 }
 
 func respondJSONURL(responseURL string, body interface{}) (*events.APIGatewayProxyResponse, error) {

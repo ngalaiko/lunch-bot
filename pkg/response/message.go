@@ -15,6 +15,8 @@ type TextBlock struct {
 	Text string        `json:"text"`
 }
 
+type Text string
+
 func Markdown(format string, a ...interface{}) *TextBlock {
 	return &TextBlock{
 		Type: textBlockTypeMarkdown,
@@ -112,20 +114,23 @@ const (
 type message struct {
 	ReplaceOriginal bool         `json:"replace_original"`
 	ResponseType    responseType `json:"response_type,omitempty"`
+	Text            Text         `json:"text,omitempty"` // Text used in notifications as a fallback for Blocks
 	Blocks          []*Block     `json:"blocks,omitempty"`
 }
 
-func newReplaceMessage(rt responseType, sections ...*Block) *message {
+func newReplaceMessage(rt responseType, text Text, sections ...*Block) *message {
 	return &message{
 		ReplaceOriginal: true,
 		ResponseType:    rt,
+		Text:            text,
 		Blocks:          sections,
 	}
 }
 
-func newMessage(rt responseType, sections ...*Block) *message {
+func newMessage(rt responseType, text Text, sections ...*Block) *message {
 	return &message{
 		ResponseType: rt,
+		Text:         text,
 		Blocks:       sections,
 	}
 }
