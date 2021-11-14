@@ -29,14 +29,14 @@ func migratePlaces(ctx context.Context, from, to storage_places.Storage) error {
 
 	for i, name := range toMigrate {
 		if isMigrated[name] {
-			log.Printf("[INFO] %d/%d %+v migrated, skipping", i, len(toMigrate), name)
+			log.Printf("[INFO] %d/%d %+v migrated, skipping", i+1, len(toMigrate), name)
 			continue
 		}
 		place, err := from.GetByName(ctx, name)
 		if err != nil {
 			return fmt.Errorf("failed to get item by name: %w", err)
 		}
-		log.Printf("[INFO] %d/%d migrating %+v", i, len(toMigrate), place)
+		log.Printf("[INFO] %d/%d migrating %+v", i+1, len(toMigrate), place)
 		if err := to.Store(ctx, place); err != nil {
 			return fmt.Errorf("failed to store item: %w", err)
 		}
