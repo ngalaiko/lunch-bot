@@ -10,7 +10,10 @@ import (
 	"time"
 
 	"lunch/pkg/lunch"
+	storage_boosts "lunch/pkg/lunch/boosts/storage"
 	"lunch/pkg/lunch/places"
+	storage_places "lunch/pkg/lunch/places/storage"
+	storage_rolls "lunch/pkg/lunch/rolls/storage"
 	"lunch/pkg/request"
 	"lunch/pkg/response"
 	"lunch/pkg/store"
@@ -57,9 +60,13 @@ func mustLoadConfig() aws.Config {
 }
 
 var (
-	cfg     = mustLoadConfig()
-	s3Store = store.NewS3(cfg)
-	roller  = lunch.New(s3Store)
+	cfg           = mustLoadConfig()
+	s3Store       = store.NewS3(cfg)
+	dynamodbStore = store.NewDynamoDB(cfg)
+	placesStore   = storage_places.NewS3(s3Store)
+	boostsStore   = storage_boosts.NewS3(s3Store)
+	rollsStore    = storage_rolls.NewS3(s3Store)
+	roller        = lunch.New(placesStore, boostsStore, rollsStore)
 )
 
 func Handle(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
@@ -161,7 +168,7 @@ func handleAdd(ctx context.Context, place string) (*events.APIGatewayProxyRespon
 	}
 	return response.Ephemeral(
 		response.Text(fmt.Sprintf("%s added", place)),
-		response.Section(response.Markdown("*%s* added!", place), nil),
+		response.Section(response.Markdown("*%s* added!", place)),
 	)
 }
 

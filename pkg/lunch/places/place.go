@@ -9,9 +9,9 @@ import (
 type Name string
 
 type Place struct {
-	Name    Name        `json:"name"`
-	AddedAt time.Time   `json:"added_at"`
-	AddedBy *users.User `json:"added_by"`
+	Name    Name        `dynamodbav:"name"`
+	AddedAt time.Time   `dynamodbav:"added_at,unixtime"`
+	AddedBy *users.User `dynamodbav:"added_by"`
 }
 
 func NewPlace(name Name, user *users.User) *Place {

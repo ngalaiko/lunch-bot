@@ -11,21 +11,18 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-// verify interface
-var _ Storage = &S3Store{}
-
-type S3Store struct {
+type S3 struct {
 	s3Client *s3.Client
 }
 
-func NewS3(cfg aws.Config) *S3Store {
-	return &S3Store{
+func NewS3(cfg aws.Config) *S3 {
+	return &S3{
 		s3Client: s3.NewFromConfig(cfg),
 	}
 }
 
 // Store stores object by key in the bucket.
-func (store *S3Store) Store(ctx context.Context, bucket, key string, body []byte) error {
+func (store *S3) Store(ctx context.Context, bucket, key string, body []byte) error {
 	if _, err := store.s3Client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:       aws.String(bucket),
 		Key:          aws.String(key),
@@ -38,12 +35,9 @@ func (store *S3Store) Store(ctx context.Context, bucket, key string, body []byte
 }
 
 // ListKeys returns up to 1000 keys from the bucket.
-func (store *S3Store) ListKeys(ctx context.Context, bucket string, opts ...ListKeysOption) ([]string, error) {
-	options := getListKeysOptions(opts)
-
+func (store *S3) ListKeys(ctx context.Context, bucket string) ([]string, error) {
 	response, err := store.s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 		Bucket: aws.String(bucket),
-		Prefix: options.prefix,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to ListObjectsV2 from '%s': %w", bucket, err)
@@ -58,7 +52,7 @@ func (store *S3Store) ListKeys(ctx context.Context, bucket string, opts ...ListK
 }
 
 // Get returns object content by key from the bucket.
-func (store *S3Store) Get(ctx context.Context, bucket, key string) ([]byte, error) {
+func (store *S3) Get(ctx context.Context, bucket, key string) ([]byte, error) {
 	response, err := store.s3Client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),

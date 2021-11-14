@@ -7,9 +7,11 @@ import (
 	"time"
 
 	"lunch/pkg/lunch/boosts"
+	storage_boosts "lunch/pkg/lunch/boosts/storage"
 	"lunch/pkg/lunch/places"
+	storage_places "lunch/pkg/lunch/places/storage"
 	"lunch/pkg/lunch/rolls"
-	"lunch/pkg/store"
+	storage_rolls "lunch/pkg/lunch/rolls/storage"
 	"lunch/pkg/users"
 )
 
@@ -19,18 +21,22 @@ var (
 )
 
 type Roller struct {
-	placesStore *places.Store
-	rollsStore  *rolls.Store
-	boostsStore *boosts.Store
+	placesStore storage_places.Storage
+	rollsStore  storage_rolls.Storage
+	boostsStore storage_boosts.Storage
 
 	rand *rand.Rand
 }
 
-func New(storage store.Storage) *Roller {
+func New(
+	placesStorage storage_places.Storage,
+	boostsStorage storage_boosts.Storage,
+	rollsStorage storage_rolls.Storage,
+) *Roller {
 	return &Roller{
-		placesStore: places.NewStore(storage),
-		rollsStore:  rolls.NewStore(storage),
-		boostsStore: boosts.NewStore(storage),
+		placesStore: placesStorage,
+		rollsStore:  rollsStorage,
+		boostsStore: boostsStorage,
 		rand:        rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 }

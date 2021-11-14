@@ -4,8 +4,10 @@ import (
 	"testing"
 	"time"
 
+	storage_boosts "lunch/pkg/lunch/boosts/storage"
 	"lunch/pkg/lunch/places"
-	"lunch/pkg/store"
+	storage_places "lunch/pkg/lunch/places/storage"
+	storage_rolls "lunch/pkg/lunch/rolls/storage"
 )
 
 func TestHistory_roll_boost__active_boost(t *testing.T) {
@@ -14,7 +16,7 @@ func TestHistory_roll_boost__active_boost(t *testing.T) {
 	today := time.Date(2021, time.September, 6, 9, 0, 0, 0, time.UTC) // Monday
 
 	ctx := testContext(testUser())
-	roller := New(store.NewInMemory())
+	roller := New(storage_places.NewMemory(), storage_boosts.NewMemory(), storage_rolls.NewMemory())
 	pp := []string{"place1", "place2", "place3"}
 	for _, place := range pp {
 		assertNoError(t, roller.NewPlace(ctx, place))
@@ -44,7 +46,7 @@ func TestHistory_boost_roll__no_active_boost(t *testing.T) {
 	today := time.Date(2021, time.September, 6, 9, 0, 0, 0, time.UTC) // Monday
 
 	ctx := testContext(testUser())
-	roller := New(store.NewInMemory())
+	roller := New(storage_places.NewMemory(), storage_boosts.NewMemory(), storage_rolls.NewMemory())
 	pp := []string{"place1", "place2", "place3"}
 	for _, place := range pp {
 		assertNoError(t, roller.NewPlace(ctx, place))

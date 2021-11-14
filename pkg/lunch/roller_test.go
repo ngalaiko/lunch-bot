@@ -9,7 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"lunch/pkg/store"
+	storage_boosts "lunch/pkg/lunch/boosts/storage"
+	storage_places "lunch/pkg/lunch/places/storage"
+	storage_rolls "lunch/pkg/lunch/rolls/storage"
 	"lunch/pkg/users"
 )
 
@@ -17,7 +19,7 @@ func TestRoll_noPlaces(t *testing.T) {
 	t.Parallel()
 
 	ctx := testContext(testUser())
-	roller := New(store.NewInMemory())
+	roller := New(storage_places.NewMemory(), storage_boosts.NewMemory(), storage_rolls.NewMemory())
 
 	place, err := roller.Roll(ctx, time.Now())
 	assertError(t, ErrNoPlaces, err)
@@ -32,7 +34,7 @@ func TestRoll_reroll_then_boost(t *testing.T) {
 	oneWeek := 7 * oneDay
 
 	ctx := testContext(testUser())
-	roller := New(store.NewInMemory())
+	roller := New(storage_places.NewMemory(), storage_boosts.NewMemory(), storage_rolls.NewMemory())
 	places := []string{"place1", "place2", "place3"}
 	for _, place := range places {
 		assertNoError(t, roller.NewPlace(ctx, place))
@@ -59,7 +61,7 @@ func TestRoll_boost_then_reroll(t *testing.T) {
 	oneWeek := 7 * oneDay
 
 	ctx := testContext(testUser())
-	roller := New(store.NewInMemory())
+	roller := New(storage_places.NewMemory(), storage_boosts.NewMemory(), storage_rolls.NewMemory())
 	places := []string{"place1", "place2", "place3"}
 	for _, place := range places {
 		assertNoError(t, roller.NewPlace(ctx, place))
@@ -114,7 +116,7 @@ func TestRoll_rerolls(t *testing.T) {
 	}
 
 	ctx := testContext(testUser())
-	roller := New(store.NewInMemory())
+	roller := New(storage_places.NewMemory(), storage_boosts.NewMemory(), storage_rolls.NewMemory())
 	places := []string{"place1", "place2", "place3"}
 	for _, place := range places {
 		assertNoError(t, roller.NewPlace(ctx, place))
