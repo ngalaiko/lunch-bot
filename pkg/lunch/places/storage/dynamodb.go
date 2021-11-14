@@ -36,7 +36,7 @@ func (s *DynamoDBStorage) Store(ctx context.Context, place *places.Place) error 
 
 func (s *DynamoDBStorage) ListNames(ctx context.Context) ([]places.Name, error) {
 	pp := []*places.Place{}
-	if err := s.storage.Select(ctx, &pp, `SELECT * FROM Places`); err != nil {
+	if err := s.storage.Query(ctx, &pp, `SELECT * FROM Places`); err != nil {
 		return nil, fmt.Errorf("failed to select: %w", err)
 	}
 	names := make([]places.Name, 0, len(pp))
@@ -48,7 +48,7 @@ func (s *DynamoDBStorage) ListNames(ctx context.Context) ([]places.Name, error) 
 
 func (s *DynamoDBStorage) GetByName(ctx context.Context, name places.Name) (*places.Place, error) {
 	places := []*places.Place{}
-	if err := s.storage.Select(ctx, &places, `SELECT * FROM Places WHERE name = ?`, name); err != nil {
+	if err := s.storage.Query(ctx, &places, `SELECT * FROM Places WHERE name = ?`, name); err != nil {
 		return nil, fmt.Errorf("failed to select: %w", err)
 	}
 	return places[0], nil

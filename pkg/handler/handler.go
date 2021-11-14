@@ -61,11 +61,10 @@ func mustLoadConfig() aws.Config {
 
 var (
 	cfg           = mustLoadConfig()
-	s3Store       = store.NewS3(cfg)
 	dynamodbStore = store.NewDynamoDB(cfg)
-	placesStore   = storage_places.NewS3(s3Store)
-	boostsStore   = storage_boosts.NewS3(s3Store)
-	rollsStore    = storage_rolls.NewS3(s3Store)
+	placesStore   = storage_places.NewDynamoDB(dynamodbStore)
+	boostsStore   = storage_boosts.NewDynamoDB(dynamodbStore)
+	rollsStore    = storage_rolls.NewDynamoDB(dynamodbStore)
 	roller        = lunch.New(placesStore, boostsStore, rollsStore)
 )
 

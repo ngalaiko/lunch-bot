@@ -37,7 +37,7 @@ func (dynamodb *DynamoDBStorage) Store(ctx context.Context, roll *rolls.Roll) er
 
 func (dynamo *DynamoDBStorage) ListRolls(ctx context.Context) ([]*rolls.Roll, error) {
 	rr := []*rolls.Roll{}
-	if err := dynamo.storage.Select(ctx, &rr, `SELECT * FROM Rolls`); err != nil {
+	if err := dynamo.storage.Query(ctx, &rr, `SELECT * FROM Rolls`); err != nil {
 		return nil, fmt.Errorf("failed to select: %w", err)
 	}
 	return rr, nil

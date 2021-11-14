@@ -37,7 +37,7 @@ func (dynamodb *DynamoDBStorage) Store(ctx context.Context, boost *boosts.Boost)
 
 func (dynamo *DynamoDBStorage) ListBoosts(ctx context.Context) ([]*boosts.Boost, error) {
 	bb := []*boosts.Boost{}
-	if err := dynamo.storage.Select(ctx, &bb, `SELECT * FROM Boosts`); err != nil {
+	if err := dynamo.storage.Query(ctx, &bb, `SELECT * FROM Boosts`); err != nil {
 		return nil, fmt.Errorf("failed to select: %w", err)
 	}
 	return bb, nil
