@@ -24,7 +24,7 @@ func (dynamodb *DynamoDBStorage) Store(ctx context.Context, boost *boosts.Boost)
 	if err := dynamodb.storage.Execute(ctx, `
 		INSERT INTO Boosts
 			value {
-				'id': ?
+				'id': ?,
 				'user_id': ?,
 				'place_name': ?,
 				'time': ?

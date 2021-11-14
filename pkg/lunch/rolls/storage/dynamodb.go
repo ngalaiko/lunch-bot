@@ -22,9 +22,9 @@ func NewDynamoDB(storage *store.DynamoDB) *DynamoDBStorage {
 
 func (dynamodb *DynamoDBStorage) Store(ctx context.Context, roll *rolls.Roll) error {
 	if err := dynamodb.storage.Execute(ctx, `
-		INSERT INTO Boosts
+		INSERT INTO Rolls
 			value {
-				'id': ?
+				'id': ?,
 				'user_id': ?,
 				'place_name': ?,
 				'time': ?
