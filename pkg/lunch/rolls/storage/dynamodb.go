@@ -26,9 +26,10 @@ func (dynamodb *DynamoDBStorage) Store(ctx context.Context, roll *rolls.Roll) er
 			value {
 				'id': ?,
 				'user_id': ?,
+				'place_id': ?,
 				'time': ?
 			}
-	`, roll.ID, roll.UserID, roll.Time.Unix()); err != nil {
+	`, roll.ID, roll.UserID, roll.PlaceID, roll.Time.Unix()); err != nil {
 		return fmt.Errorf("failed to insert: %w", err)
 	}
 	return nil
