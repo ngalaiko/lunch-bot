@@ -38,3 +38,11 @@ func (memory *MemoryStorage) GetByName(_ context.Context, name places.Name) (*pl
 	}
 	return place, nil
 }
+
+func (memory *MemoryStorage) ListAll(_ context.Context) ([]*places.Place, error) {
+	places := []*places.Place{}
+	for _, place := range memory.places {
+		places = append(places, place)
+	}
+	return places, nil
+}

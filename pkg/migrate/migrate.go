@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	storage_boosts "lunch/pkg/lunch/boosts/storage"
+	storage_places "lunch/pkg/lunch/places/storage"
+	storage_rolls "lunch/pkg/lunch/rolls/storage"
 	"lunch/pkg/store"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -21,6 +24,9 @@ func mustLoadConfig() aws.Config {
 var (
 	cfg           = mustLoadConfig()
 	dynamodbStore = store.NewDynamoDB(cfg)
+	placesStorage = storage_places.NewDynamoDB(dynamodbStore)
+	boostsStore   = storage_boosts.NewDynamoDB(dynamodbStore)
+	rollsStore    = storage_rolls.NewDynamoDB(dynamodbStore)
 )
 
 func Run(ctx context.Context) error {
