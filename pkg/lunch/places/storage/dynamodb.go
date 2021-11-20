@@ -35,21 +35,9 @@ func (s *DynamoDBStorage) Store(ctx context.Context, place *places.Place) error 
 	return nil
 }
 
-func (s *DynamoDBStorage) ListNames(ctx context.Context) ([]places.Name, error) {
-	pp := []*places.Place{}
-	if err := s.storage.Query(ctx, &pp, `SELECT * FROM Places`); err != nil {
-		return nil, fmt.Errorf("failed to select: %w", err)
-	}
-	names := make([]places.Name, 0, len(pp))
-	for _, place := range pp {
-		names = append(names, place.Name)
-	}
-	return names, nil
-}
-
-func (s *DynamoDBStorage) GetByName(ctx context.Context, name places.Name) (*places.Place, error) {
+func (s *DynamoDBStorage) GetByID(ctx context.Context, id places.ID) (*places.Place, error) {
 	places := []*places.Place{}
-	if err := s.storage.Query(ctx, &places, `SELECT * FROM Places WHERE name = ?`, name); err != nil {
+	if err := s.storage.Query(ctx, &places, `SELECT * FROM Places WHERE id = ?`, id); err != nil {
 		return nil, fmt.Errorf("failed to select: %w", err)
 	}
 	return places[0], nil

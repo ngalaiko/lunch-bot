@@ -55,20 +55,24 @@ func (r *Roller) NewPlace(ctx context.Context, name string) error {
 }
 
 func (r *Roller) ListPlaces(ctx context.Context) ([]places.Name, error) {
-	names, err := r.placesStore.ListNames(ctx)
+	pp, err := r.placesStore.ListAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list names: %w", err)
+	}
+	names := make([]places.Name, len(pp))
+	for i, place := range pp {
+		names[i] = place.Name
 	}
 	return names, nil
 }
 
 func (r *Roller) ListChances(ctx context.Context, now time.Time) (map[places.Name]float64, error) {
-	allNames, err := r.placesStore.ListNames(ctx)
+	allPlaces, err := r.placesStore.ListAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list names: %w", err)
 	}
 
-	if len(allNames) == 0 {
+	if len(allPlaces) == 0 {
 		return nil, ErrNoPlaces
 	}
 
@@ -77,16 +81,16 @@ func (r *Roller) ListChances(ctx context.Context, now time.Time) (map[places.Nam
 		return nil, fmt.Errorf("failed to build history")
 	}
 
-	weights := history.getWeights(allNames, now)
+	weights := history.getWeights(allPlaces, now)
 	weightsSum := 0.0
 	for _, weight := range weights {
 		weightsSum += weight
 	}
 
-	chances := make(map[places.Name]float64, len(allNames))
+	chances := make(map[places.Name]float64, len(allPlaces))
 	for i, weight := range weights {
 		chance := weight / weightsSum * 100
-		chances[allNames[i]] = chance
+		chances[allPlaces[i].Name] = chance
 	}
 
 	return chances, nil
@@ -147,19 +151,19 @@ func (r *Roller) storeResult(ctx context.Context, user *users.User, place *place
 }
 
 func (r *Roller) pickRandomPlace(ctx context.Context, history *rollsHistory, now time.Time) (*places.Place, error) {
-	allNames, err := r.placesStore.ListNames(ctx)
+	allPlaces, err := r.placesStore.ListAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list names: %w", err)
 	}
 
-	if len(allNames) == 0 {
+	if len(allPlaces) == 0 {
 		return nil, ErrNoPlaces
 	}
 
-	weights := history.getWeights(allNames, now)
+	weights := history.getWeights(allPlaces, now)
 	randomIndex := weightedRandom(r.rand, weights)
-	randomPlaceName := allNames[randomIndex]
-	place, err := r.placesStore.GetByName(ctx, randomPlaceName)
+	randomPlace := allPlaces[randomIndex]
+	place, err := r.placesStore.GetByID(ctx, randomPlace.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get place by id: %w", err)
 	}

@@ -135,28 +135,28 @@ func (h *rollsHistory) pointsLeft(user *users.User) int {
 
 // getWeights returns a list of weights for places to choose from.
 // higher weights means higher chance of choosing a place.
-// list of weights is the same length as list of allNames,
-// where weights[i] is the weight for allNames[i].
+// list of weights is the same length as list of places,
+// where weights[i] is the weight for places[i].
 //
 // weight are distributed in a way so that the most recent rolls get the lowest weight.
-func (h *rollsHistory) getWeights(allNames []places.Name, now time.Time) []float64 {
-	namesTotal := len(allNames)
-	weights := make([]float64, namesTotal)
-	for i, name := range allNames {
-		lastRolledAt, wasRolled := h.LastRolled[name]
+func (h *rollsHistory) getWeights(places []*places.Place, now time.Time) []float64 {
+	placesTotal := len(places)
+	weights := make([]float64, placesTotal)
+	for i, place := range places {
+		lastRolledAt, wasRolled := h.LastRolled[place.Name]
 		if !wasRolled {
-			weights[i] = float64(namesTotal)
+			weights[i] = float64(placesTotal)
 		} else {
 			rolledAgo := now.Sub(lastRolledAt)
 			rolledDaysAgo := int(math.Floor(rolledAgo.Hours() / hoursInADay))
-			if rolledDaysAgo >= namesTotal {
-				weights[i] = float64(namesTotal)
+			if rolledDaysAgo >= placesTotal {
+				weights[i] = float64(placesTotal)
 			} else {
 				weights[i] = float64(rolledDaysAgo) + 1
 			}
 		}
 
-		for range h.ActiveBoosts[name] {
+		for range h.ActiveBoosts[place.Name] {
 			weights[i] *= boostMultiplier
 		}
 	}

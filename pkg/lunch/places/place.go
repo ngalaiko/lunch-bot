@@ -10,8 +10,10 @@ import (
 
 type Name string
 
+type ID string
+
 type Place struct {
-	ID      string      `dynamodbav:"id"`
+	ID      ID          `dynamodbav:"id"`
 	Name    Name        `dynamodbav:"name"`
 	AddedAt time.Time   `dynamodbav:"added_at,unixtime"`
 	AddedBy *users.User `dynamodbav:"added_by"`
@@ -19,7 +21,7 @@ type Place struct {
 
 func NewPlace(name Name, user *users.User) *Place {
 	return &Place{
-		ID:      uuid.NewString(),
+		ID:      ID(uuid.NewString()),
 		Name:    name,
 		AddedBy: user,
 		AddedAt: time.Now(),
