@@ -147,7 +147,7 @@ func (r *Roller) Roll(ctx context.Context, now time.Time) (*places.Place, error)
 }
 
 func (r *Roller) storeResult(ctx context.Context, user *users.User, place *places.Place, now time.Time) error {
-	return r.rollsStore.Store(ctx, rolls.NewRoll(user, place.Name, now))
+	return r.rollsStore.Store(ctx, rolls.NewRoll(user, place.ID, now))
 }
 
 func (r *Roller) pickRandomPlace(ctx context.Context, history *rollsHistory, now time.Time) (*places.Place, error) {

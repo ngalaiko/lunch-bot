@@ -21,7 +21,7 @@ const (
 type rollsHistory struct {
 	ThisWeekBoosts []*boosts.Boost
 	ThisWeekRolls  map[time.Weekday][]*rolls.Roll
-	LastRolled     map[places.Name]time.Time
+	LastRolled     map[places.ID]time.Time
 	ActiveBoosts   map[places.Name][]*boosts.Boost
 }
 
@@ -38,7 +38,7 @@ func (r *Roller) buildHistory(ctx context.Context, now time.Time) (*rollsHistory
 
 	year, week := now.ISOWeek()
 	thisWeekRolls := map[time.Weekday][]*rolls.Roll{}
-	lastRolled := map[places.Name]time.Time{}
+	lastRolled := map[places.ID]time.Time{}
 	var latestRoll *rolls.Roll
 	for _, roll := range allRolls {
 		rollYear, rollWeek := roll.Time.ISOWeek()
@@ -49,8 +49,8 @@ func (r *Roller) buildHistory(ctx context.Context, now time.Time) (*rollsHistory
 			thisWeekRolls[weekday] = append(thisWeekRolls[weekday], roll)
 		}
 
-		if roll.Time.After(lastRolled[roll.PlaceName]) {
-			lastRolled[roll.PlaceName] = roll.Time
+		if roll.Time.After(lastRolled[roll.PlaceID]) {
+			lastRolled[roll.PlaceID] = roll.Time
 		}
 
 		if latestRoll == nil {
@@ -143,7 +143,7 @@ func (h *rollsHistory) getWeights(places []*places.Place, now time.Time) []float
 	placesTotal := len(places)
 	weights := make([]float64, placesTotal)
 	for i, place := range places {
-		lastRolledAt, wasRolled := h.LastRolled[place.Name]
+		lastRolledAt, wasRolled := h.LastRolled[place.ID]
 		if !wasRolled {
 			weights[i] = float64(placesTotal)
 		} else {
