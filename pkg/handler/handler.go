@@ -200,6 +200,10 @@ func list(ctx context.Context) ([]*response.Block, error) {
 		})
 	}
 
+	sort.Slice(pp, func(i, j int) bool {
+		return pp[i].Name < pp[j].Name
+	})
+
 	sort.SliceStable(pp, func(i, j int) bool {
 		return pp[i].Chance > pp[j].Chance
 	})
