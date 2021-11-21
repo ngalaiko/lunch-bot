@@ -12,17 +12,17 @@ import (
 type ID string
 
 type Boost struct {
-	ID        ID          `dynamodbav:"id"`
-	UserID    string      `dynamodbav:"user_id"`
-	PlaceName places.Name `dynamodbav:"place_name"`
-	Time      time.Time   `dynamodbav:"time,unixtime"`
+	ID      ID        `dynamodbav:"id"`
+	UserID  string    `dynamodbav:"user_id"`
+	PlaceID places.ID `dynamodbav:"place_id"`
+	Time    time.Time `dynamodbav:"time,unixtime"`
 }
 
-func NewBoost(user *users.User, placeName places.Name, now time.Time) *Boost {
+func NewBoost(user *users.User, placeID places.ID, now time.Time) *Boost {
 	return &Boost{
-		ID:        ID(uuid.NewString()),
-		UserID:    user.ID,
-		PlaceName: placeName,
-		Time:      now,
+		ID:      ID(uuid.NewString()),
+		UserID:  user.ID,
+		PlaceID: placeID,
+		Time:    now,
 	}
 }

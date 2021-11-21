@@ -26,10 +26,10 @@ func (dynamodb *DynamoDBStorage) Store(ctx context.Context, boost *boosts.Boost)
 			value {
 				'id': ?,
 				'user_id': ?,
-				'place_name': ?,
+				'place_id': ?,
 				'time': ?
 			}
-	`, boost.ID, boost.UserID, boost.PlaceName, boost.Time.Unix()); err != nil {
+	`, boost.ID, boost.UserID, boost.PlaceID, boost.Time.Unix()); err != nil {
 		return fmt.Errorf("failed to insert: %w", err)
 	}
 	return nil

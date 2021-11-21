@@ -41,17 +41,18 @@ func New(
 	}
 }
 
-func (r *Roller) NewPlace(ctx context.Context, name string) error {
+func (r *Roller) NewPlace(ctx context.Context, name string) (*places.Place, error) {
 	user, ok := users.FromContext(ctx)
 	if !ok {
-		return fmt.Errorf("expected to find who in the context")
+		return nil, fmt.Errorf("expected to find who in the context")
 	}
 
-	if err := r.placesStore.Store(ctx, places.NewPlace(places.Name(name), user)); err != nil {
-		return fmt.Errorf("failed to store place: %w", err)
+	place := places.NewPlace(places.Name(name), user)
+	if err := r.placesStore.Store(ctx, place); err != nil {
+		return nil, fmt.Errorf("failed to store place: %w", err)
 	}
 
-	return nil
+	return place, nil
 }
 
 func (r *Roller) ListPlaces(ctx context.Context) ([]places.Name, error) {
@@ -66,7 +67,7 @@ func (r *Roller) ListPlaces(ctx context.Context) ([]places.Name, error) {
 	return names, nil
 }
 
-func (r *Roller) ListChances(ctx context.Context, now time.Time) (map[places.Name]float64, error) {
+func (r *Roller) ListChances(ctx context.Context, now time.Time) (map[*places.Place]float64, error) {
 	allPlaces, err := r.placesStore.ListAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list names: %w", err)
@@ -87,16 +88,16 @@ func (r *Roller) ListChances(ctx context.Context, now time.Time) (map[places.Nam
 		weightsSum += weight
 	}
 
-	chances := make(map[places.Name]float64, len(allPlaces))
+	chances := make(map[*places.Place]float64, len(allPlaces))
 	for i, weight := range weights {
 		chance := weight / weightsSum * 100
-		chances[allPlaces[i].Name] = chance
+		chances[allPlaces[i]] = chance
 	}
 
 	return chances, nil
 }
 
-func (r *Roller) Boost(ctx context.Context, name string, now time.Time) error {
+func (r *Roller) Boost(ctx context.Context, placeID places.ID, now time.Time) error {
 	user, ok := users.FromContext(ctx)
 	if !ok {
 		return fmt.Errorf("expected to find who in the context")
@@ -111,7 +112,7 @@ func (r *Roller) Boost(ctx context.Context, name string, now time.Time) error {
 		return fmt.Errorf("can't boost any more: %w", err)
 	}
 
-	boost := boosts.NewBoost(user, places.Name(name), now)
+	boost := boosts.NewBoost(user, placeID, now)
 	if err := r.boostsStore.Store(ctx, boost); err != nil {
 		return fmt.Errorf("failed to store boost: %w", err)
 	}

@@ -17,27 +17,30 @@ func TestHistory_roll_boost__active_boost(t *testing.T) {
 
 	ctx := testContext(testUser())
 	roller := New(storage_places.NewMemory(), storage_boosts.NewMemory(), storage_rolls.NewMemory())
-	pp := []string{"place1", "place2", "place3"}
-	for _, place := range pp {
-		assertNoError(t, roller.NewPlace(ctx, place))
+	placeNames := []string{"place1", "place2", "place3"}
+	places := make([]*places.Place, len(placeNames))
+	for i, name := range placeNames {
+		place, err := roller.NewPlace(ctx, name)
+		assertNoError(t, err)
+		places[i] = place
 	}
 
 	_, firstRollError := roller.Roll(ctx, today)
 	assertNoError(t, firstRollError)
 
-	firstBoostError := roller.Boost(ctx, pp[0], today.Add(time.Minute))
+	firstBoostError := roller.Boost(ctx, places[0].ID, today.Add(time.Minute))
 	assertNoError(t, firstBoostError)
 
 	history, err := roller.buildHistory(ctx, today.Add(2*time.Minute))
 	assertNoError(t, err)
-	assertEqual(t, 1, len(history.ActiveBoosts[places.Name(pp[0])]))
+	assertEqual(t, 1, len(history.ActiveBoosts[places[0].ID]))
 
-	anotherBoostError := roller.Boost(testContext(testUser()), pp[0], today.Add(time.Minute))
+	anotherBoostError := roller.Boost(testContext(testUser()), places[0].ID, today.Add(time.Minute))
 	assertNoError(t, anotherBoostError)
 
 	history, err = roller.buildHistory(ctx, today.Add(2*time.Minute))
 	assertNoError(t, err)
-	assertEqual(t, 2, len(history.ActiveBoosts[places.Name(pp[0])]))
+	assertEqual(t, 2, len(history.ActiveBoosts[places[0].ID]))
 }
 
 func TestHistory_boost_roll__no_active_boost(t *testing.T) {
@@ -47,15 +50,18 @@ func TestHistory_boost_roll__no_active_boost(t *testing.T) {
 
 	ctx := testContext(testUser())
 	roller := New(storage_places.NewMemory(), storage_boosts.NewMemory(), storage_rolls.NewMemory())
-	pp := []string{"place1", "place2", "place3"}
-	for _, place := range pp {
-		assertNoError(t, roller.NewPlace(ctx, place))
+	placeNames := []string{"place1", "place2", "place3"}
+	places := make([]*places.Place, len(placeNames))
+	for i, name := range placeNames {
+		place, err := roller.NewPlace(ctx, name)
+		assertNoError(t, err)
+		places[i] = place
 	}
 
-	firstBoostError := roller.Boost(ctx, pp[0], today)
+	firstBoostError := roller.Boost(ctx, places[0].ID, today)
 	assertNoError(t, firstBoostError)
 
-	anotherBoostError := roller.Boost(testContext(testUser()), pp[0], today)
+	anotherBoostError := roller.Boost(testContext(testUser()), places[0].ID, today)
 	assertNoError(t, anotherBoostError)
 
 	_, firstRollError := roller.Roll(ctx, today.Add(time.Minute))
@@ -63,5 +69,5 @@ func TestHistory_boost_roll__no_active_boost(t *testing.T) {
 
 	history, err := roller.buildHistory(ctx, today.Add(2*time.Minute))
 	assertNoError(t, err)
-	assertEqual(t, 0, len(history.ActiveBoosts[places.Name(pp[0])]))
+	assertEqual(t, 0, len(history.ActiveBoosts[places[0].ID]))
 }

@@ -103,14 +103,14 @@ func handleActions(ctx context.Context, responseURL string, actions ...*action) 
 	log.Printf("[INFO] incoming action: %+v", action)
 	switch action.ActionID {
 	case "boost":
-		return handleBoost(ctx, responseURL, action.Value)
+		return handleBoost(ctx, responseURL, places.ID(action.Value))
 	default:
 		return response.BadRequest(fmt.Errorf("not implemented"))
 	}
 }
 
-func handleBoost(ctx context.Context, responseURL string, place string) (*events.APIGatewayProxyResponse, error) {
-	err := roller.Boost(ctx, place, time.Now())
+func handleBoost(ctx context.Context, responseURL string, placeID places.ID) (*events.APIGatewayProxyResponse, error) {
+	err := roller.Boost(ctx, placeID, time.Now())
 	switch {
 	case err == nil:
 		responseBlocks, err := list(ctx)
@@ -161,13 +161,13 @@ func handleRoll(ctx context.Context) (*events.APIGatewayProxyResponse, error) {
 	}
 }
 
-func handleAdd(ctx context.Context, place string) (*events.APIGatewayProxyResponse, error) {
-	if err := roller.NewPlace(ctx, place); err != nil {
+func handleAdd(ctx context.Context, placeName string) (*events.APIGatewayProxyResponse, error) {
+	if _, err := roller.NewPlace(ctx, placeName); err != nil {
 		return response.InternalServerError(err)
 	}
 	return response.Ephemeral(
-		response.Text(fmt.Sprintf("%s added", place)),
-		response.Section(response.Markdown("*%s* added!", place)),
+		response.Text(fmt.Sprintf("%s added", placeName)),
+		response.Section(response.Markdown("*%s* added!", placeName)),
 	)
 }
 
@@ -186,6 +186,7 @@ func list(ctx context.Context) ([]*response.Block, error) {
 	}
 
 	type placeChance struct {
+		ID     places.ID
 		Name   places.Name
 		Chance float64
 	}
@@ -193,7 +194,8 @@ func list(ctx context.Context) ([]*response.Block, error) {
 	pp := make([]placeChance, 0, len(placeChances))
 	for place, chance := range placeChances {
 		pp = append(pp, placeChance{
-			Name:   place,
+			ID:     place.ID,
+			Name:   place.Name,
 			Chance: chance,
 		})
 	}
@@ -213,7 +215,7 @@ func list(ctx context.Context) ([]*response.Block, error) {
 				response.PlainText("%s", p.Name),
 				response.PlainText("%.2f%%", p.Chance),
 			},
-			response.WithButton(response.PlainText("Boost"), "boost", string(p.Name)),
+			response.WithButton(response.PlainText("Boost"), "boost", string(p.ID)),
 		))
 	}
 
