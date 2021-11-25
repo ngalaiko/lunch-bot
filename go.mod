@@ -10,6 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.8.0
 	github.com/google/uuid v1.3.0
 	github.com/hetiansu5/urlquery v1.2.7
+	github.com/iamatypeofwalrus/shim v1.0.0
 )
 
 require (
@@ -26,4 +27,5 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.7.1 // indirect
 	github.com/aws/smithy-go v1.9.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
