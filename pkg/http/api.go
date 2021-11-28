@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 
+	"lunch/pkg/http/slack"
 	"lunch/pkg/lunch"
 	storage_boosts "lunch/pkg/lunch/boosts/storage"
 	storage_places "lunch/pkg/lunch/places/storage"
@@ -11,7 +12,6 @@ import (
 
 type Server struct {
 	router *http.ServeMux
-
 	roller *lunch.Roller
 }
 
@@ -24,7 +24,7 @@ func NewServer(
 		router: http.NewServeMux(),
 		roller: lunch.New(placesStore, boostsStore, rollsStore),
 	}
-	s.routes()
+	s.registerRoutes()
 	return s
 }
 
@@ -32,6 +32,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	normalizePath(accessLogs(s.router.ServeHTTP)).ServeHTTP(w, r)
 }
 
-func (s *Server) routes() {
-	s.router.HandleFunc("/", s.handleSlack())
+func (s *Server) registerRoutes() {
+	s.router.Handle("/", slack.NewHandler(s.roller))
 }

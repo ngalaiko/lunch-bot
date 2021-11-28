@@ -109,17 +109,17 @@ const (
 	responseTypeInChannel responseType = "in_channel"
 )
 
-// slash command response message
+// slash command response Message
 // https://api.slack.com/interactivity/slash-commands#responding_to_commands
-type message struct {
+type Message struct {
 	ReplaceOriginal bool         `json:"replace_original"`
 	ResponseType    responseType `json:"response_type,omitempty"`
 	Text            Text         `json:"text,omitempty"` // Text used in notifications as a fallback for Blocks
 	Blocks          []*Block     `json:"blocks,omitempty"`
 }
 
-func newReplaceMessage(rt responseType, text Text, sections ...*Block) *message {
-	return &message{
+func newReplaceMessage(rt responseType, text Text, sections ...*Block) *Message {
+	return &Message{
 		ReplaceOriginal: true,
 		ResponseType:    rt,
 		Text:            text,
@@ -127,8 +127,8 @@ func newReplaceMessage(rt responseType, text Text, sections ...*Block) *message 
 	}
 }
 
-func newMessage(rt responseType, text Text, sections ...*Block) *message {
-	return &message{
+func newMessage(rt responseType, text Text, sections ...*Block) *Message {
+	return &Message{
 		ResponseType: rt,
 		Text:         text,
 		Blocks:       sections,
