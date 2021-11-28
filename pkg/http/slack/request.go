@@ -10,6 +10,8 @@ import (
 	"github.com/hetiansu5/urlquery"
 )
 
+var signingSecret = "notset"
+
 type FormURLEncodedRequest struct {
 	Command  string `query:"command"`
 	Text     string `query:"text"`
