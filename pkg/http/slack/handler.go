@@ -29,10 +29,15 @@ func NewHandler(roller *lunch.Roller) *Handler {
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ct := r.Header.Get("Content-Type")
+	if ct != "application/x-www-form-urlencoded" {
+		w.WriteHeader(http.StatusUnsupportedMediaType)
+		return
+	}
+
 	command, actions, err := ParseRequest(r)
 	if err != nil {
-		log.Printf("[ERROR] failed to parse request: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 

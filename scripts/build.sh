@@ -7,8 +7,8 @@ DIR="$(dirname $0)"
 ZIP_NAME="${DIR}/${NAME}.zip"
 
 GOOS=linux GOARCH=amd64 go build \
-    -o "${NAME}" \
-    ./cmd/slack-lunch-bot/main.go
+  -o "${NAME}" \
+  ./cmd/lambda/main.go
 
 zip -q "${ZIP_NAME}" "${NAME}"
 

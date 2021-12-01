@@ -43,11 +43,6 @@ type ActionsRequest struct {
 }
 
 func ParseRequest(r *http.Request) (*CommandRequest, *ActionsRequest, error) {
-	ct := r.Header.Get("Content-Type")
-	if ct != "application/x-www-form-urlencoded" {
-		return nil, nil, fmt.Errorf("invalid content type: '%s', expected 'application/x-www-form-urlencoded'", ct)
-	}
-
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to read request body: %w", err)
