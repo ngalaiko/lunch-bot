@@ -26,7 +26,7 @@ func NewServer(
 	rollsStore storage_rolls.Storage,
 ) *Server {
 	s := &Server{
-		handler: newHandler(accessLogs, normalizePath),
+		handler: newHandler(),
 		roller:  lunch.New(placesStore, boostsStore, rollsStore),
 	}
 	s.registerRoutes()
