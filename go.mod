@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.8.2
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.4.1
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.8.0
+	github.com/go-chi/chi/v5 v5.0.7
 	github.com/google/uuid v1.3.0
 	github.com/hetiansu5/urlquery v1.2.7
 	github.com/iamatypeofwalrus/shim v1.0.0

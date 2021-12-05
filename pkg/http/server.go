@@ -12,10 +12,13 @@ import (
 	storage_boosts "lunch/pkg/lunch/boosts/storage"
 	storage_places "lunch/pkg/lunch/places/storage"
 	storage_rolls "lunch/pkg/lunch/rolls/storage"
+
+	chi "github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 type Server struct {
-	handler    *handler
+	handler    http.Handler
 	roller     *lunch.Roller
 	httpServer *http.Server
 }
@@ -26,8 +29,7 @@ func NewServer(
 	rollsStore storage_rolls.Storage,
 ) *Server {
 	s := &Server{
-		handler: newHandler(),
-		roller:  lunch.New(placesStore, boostsStore, rollsStore),
+		roller: lunch.New(placesStore, boostsStore, rollsStore),
 	}
 	s.registerRoutes()
 	return s
@@ -38,8 +40,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) registerRoutes() {
-	slackHandlerFunc := slack.NewHandler(s.roller).ServeHTTP
-	s.handler.POST("/slack-lunch-bot/", slackHandlerFunc)
+	r := chi.NewRouter()
+	r.Use(middleware.RequestID)
+	r.Use(middleware.Logger)
+	r.Use(middleware.CleanPath)
+	r.Use(middleware.Recoverer)
+
+	r.Post("/slack-lunch-bot", slack.NewHandler(s.roller).ServeHTTP)
+
+	s.handler = r
 }
 
 func (s *Server) ListenAndServe(addr string, certs ...tls.Certificate) error {
