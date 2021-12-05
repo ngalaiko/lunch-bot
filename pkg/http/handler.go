@@ -31,3 +31,10 @@ func (h *handler) GET(path string, handler http.HandlerFunc, mm ...middleware) {
 	}
 	h.mux.HandleFunc(path, handler)
 }
+
+func (h *handler) POST(path string, handler http.HandlerFunc, mm ...middleware) {
+	for _, m := range append(mm, ensureMethod(http.MethodPost), ensurePath(path)) {
+		handler = m(handler)
+	}
+	h.mux.HandleFunc(path, handler)
+}

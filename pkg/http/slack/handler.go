@@ -29,20 +29,16 @@ func NewHandler(roller *lunch.Roller) *Handler {
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ct := r.Header.Get("Content-Type")
-	if ct != "application/x-www-form-urlencoded" {
-		w.WriteHeader(http.StatusUnsupportedMediaType)
-		return
-	}
-
-	command, actions, err := ParseRequest(r)
+	command, actions, challange, err := ParseRequest(r)
 	if err != nil {
+		log.Printf("[ERROR] failed to parse request: %s", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	switch {
 	case actions != nil:
+		log.Printf("[INFO] incoming actions: %+v", actions)
 		ctx := users.NewContext(r.Context(), &users.User{ID: actions.User.ID, Name: actions.User.Name})
 		response := h.handleActions(ctx, actions.ResponseUrl, actions.Actions...)
 		if err := respondJSON(w, response); err != nil {
@@ -51,6 +47,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case command != nil:
+		log.Printf("[INFO] incoming command: %+v", command)
 		ctx := users.NewContext(r.Context(), &users.User{ID: command.UserID, Name: command.UserName})
 		response := h.handleCommand(ctx, command)
 		if err := respondJSON(w, response); err != nil {
@@ -58,6 +55,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+	case challange != nil:
+		log.Printf("[INFO] incoming challange: %+v", challange)
+		if _, err := w.Write([]byte(challange.Challenge)); err != nil {
+			log.Printf("[ERROR] failed to write challange: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		return
 	default:
 		log.Printf("[ERROR] unknown request: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)

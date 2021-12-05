@@ -38,7 +38,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) registerRoutes() {
-	s.handler.GET("/", slack.NewHandler(s.roller).ServeHTTP)
+	slackHandlerFunc := slack.NewHandler(s.roller).ServeHTTP
+	s.handler.POST("/slack-lunch-bot/", slackHandlerFunc)
 }
 
 func (s *Server) ListenAndServe(addr string, certs ...tls.Certificate) error {
