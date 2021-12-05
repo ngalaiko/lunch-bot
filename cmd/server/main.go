@@ -28,7 +28,12 @@ var (
 func main() {
 	flag.Parse()
 
-	srv := http.NewServer(boostsStore, placesStore, rollsStore)
+	cfg := &http.Configuration{}
+	if err := cfg.Parse(); err != nil {
+		log.Fatalf("failed to parse configuration: %v", err)
+	}
+
+	srv := http.NewServer(cfg, boostsStore, placesStore, rollsStore)
 
 	// Wait for shut down in a separate goroutine.
 	errCh := make(chan error)

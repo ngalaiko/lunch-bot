@@ -1,9 +1,14 @@
 package slack
 
 import (
+	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -36,12 +41,49 @@ type ChallangeRequest struct {
 	Type      string `json:"type"`
 }
 
-func ParseRequest(r *http.Request) (*CommandRequest, *ActionsRequest, *ChallangeRequest, error) {
+func verifySlackSignatureV0(header http.Header, body []byte, signingSecret string) error {
+	signature := header.Get("X-Slack-Signature")
+	if signature == "" {
+		return fmt.Errorf("X-Slack-Signature is missing")
+	}
+
+	mac := header.Get("X-Slack-Request-Timestamp")
+	if mac == "" {
+		return fmt.Errorf("X-Slack-Request-Timestamp is missing")
+	}
+
+	baseString := fmt.Sprintf("v0:%s:%s", mac, string(body))
+	hash := hmac.New(sha256.New, []byte(signingSecret))
+	if _, err := hash.Write([]byte(baseString)); err != nil {
+		return fmt.Errorf("failed to calculate signature: %w", err)
+	}
+
+	expected := fmt.Sprintf("v0=%x", hash.Sum(nil))
+	if expected != signature {
+		return fmt.Errorf("invalid signature")
+	}
+
+	return nil
+}
+
+func ParseRequest(r *http.Request, signingSecret string) (*CommandRequest, *ActionsRequest, *ChallangeRequest, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to read request body: %w", err)
+	}
+
+	if err := verifySlackSignatureV0(r.Header, body, signingSecret); err != nil {
+		return nil, nil, nil, err
+	}
+
 	ct := r.Header.Get("Content-Type")
 	switch ct {
 	case "application/x-www-form-urlencoded":
-		r.ParseForm()
-		if payload := r.Form.Get("payload"); payload != "" {
+		values, err := url.ParseQuery(string(body))
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to parse request body: %w", err)
+		}
+		if payload := values.Get("payload"); payload != "" {
 			actionsRequest := &ActionsRequest{}
 			if err := json.NewDecoder(strings.NewReader(payload)).Decode(actionsRequest); err != nil {
 				return nil, nil, nil, fmt.Errorf("failed to unmarshal payload as json: %w", err)
@@ -49,15 +91,15 @@ func ParseRequest(r *http.Request) (*CommandRequest, *ActionsRequest, *Challange
 			return nil, actionsRequest, nil, nil
 		} else {
 			return &CommandRequest{
-				Command:  r.Form.Get("command"),
-				Text:     r.Form.Get("text"),
-				UserID:   r.Form.Get("user_id"),
-				UserName: r.Form.Get("user_name"),
+				Command:  values.Get("command"),
+				Text:     values.Get("text"),
+				UserID:   values.Get("user_id"),
+				UserName: values.Get("user_name"),
 			}, nil, nil, nil
 		}
 	case "application/json":
 		challangeReq := &ChallangeRequest{}
-		if err := json.NewDecoder(r.Body).Decode(challangeReq); err != nil {
+		if err := json.NewDecoder(bytes.NewReader(body)).Decode(challangeReq); err != nil {
 			return nil, nil, nil, fmt.Errorf("failed to unmarshal payload as json: %w", err)
 		}
 		return nil, nil, challangeReq, nil

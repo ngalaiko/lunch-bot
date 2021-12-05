@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"sort"
 	"time"
 
@@ -16,22 +17,37 @@ import (
 	"lunch/pkg/users"
 )
 
+type Configuration struct {
+	SigningSecret string `envconfig:"SLACK_SIGNING_SECRET"`
+}
+
+func (c *Configuration) Parse() error {
+	signingSecret := os.Getenv("SLACK_SIGNING_SECRET")
+	if signingSecret == "" {
+		return fmt.Errorf("SLACK_SIGNING_SECRET is not set")
+	}
+	c.SigningSecret = signingSecret
+	return nil
+}
+
 type Handler struct {
+	cfg    *Configuration
 	roller *lunch.Roller
 	client *http.Client
 }
 
-func NewHandler(roller *lunch.Roller) *Handler {
+func NewHandler(cfg *Configuration, roller *lunch.Roller) *Handler {
 	return &Handler{
+		cfg:    cfg,
 		roller: roller,
 		client: &http.Client{},
 	}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	command, actions, challange, err := ParseRequest(r)
+	command, actions, challange, err := ParseRequest(r, h.cfg.SigningSecret)
 	if err != nil {
-		log.Printf("[ERROR] failed to parse request: %s", err)
+		log.Printf("[WARN] failed to parse request: %s", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

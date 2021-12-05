@@ -35,6 +35,10 @@ var (
 
 func main() {
 	log := log.New(os.Stdout, "", log.LstdFlags)
-	handler := shim.New(http.NewServer(boostsStore, placesStore, rollsStore), shim.SetDebugLogger(log))
+	cfg := &http.Configuration{}
+	if err := cfg.Parse(); err != nil {
+		log.Fatalf("failed to parse configuration: %v", err)
+	}
+	handler := shim.New(http.NewServer(cfg, boostsStore, placesStore, rollsStore), shim.SetDebugLogger(log))
 	lambda.StartWithContext(context.Background(), handler.Handle)
 }

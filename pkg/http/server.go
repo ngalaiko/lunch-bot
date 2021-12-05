@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -17,18 +18,33 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
+type Configuration struct {
+	Slack *slack.Configuration
+}
+
+func (c *Configuration) Parse() error {
+	c.Slack = &slack.Configuration{}
+	if err := c.Slack.Parse(); err != nil {
+		return fmt.Errorf("failed to parse slack configuration: %w", err)
+	}
+	return nil
+}
+
 type Server struct {
+	cfg        *Configuration
 	handler    http.Handler
 	roller     *lunch.Roller
 	httpServer *http.Server
 }
 
 func NewServer(
+	cfg *Configuration,
 	boostsStore storage_boosts.Storage,
 	placesStore storage_places.Storage,
 	rollsStore storage_rolls.Storage,
 ) *Server {
 	s := &Server{
+		cfg:    cfg,
 		roller: lunch.New(placesStore, boostsStore, rollsStore),
 	}
 	s.registerRoutes()
@@ -47,7 +63,7 @@ func (s *Server) registerRoutes() {
 	r.Use(middleware.Recoverer)
 
 	r.With(middleware.AllowContentType("application/json", "application/x-www-form-urlencoded")).
-		Post("/slack-lunch-bot", slack.NewHandler(s.roller).ServeHTTP)
+		Post("/slack-lunch-bot", slack.NewHandler(s.cfg.Slack, s.roller).ServeHTTP)
 
 	s.handler = r
 }
