@@ -57,7 +57,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	case challange != nil:
 		log.Printf("[INFO] incoming challange: %+v", challange)
-		if _, err := w.Write([]byte(challange.Challenge)); err != nil {
+		if err := respondPlainText(w, []byte(challange.Challenge)); err != nil {
 			log.Printf("[ERROR] failed to write challange: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -68,6 +68,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+}
+
+func respondPlainText(w http.ResponseWriter, body []byte) error {
+	w.Header().Set("Content-Type", "text/plain")
+	_, err := w.Write(body)
+	return err
 }
 
 func respondJSON(w http.ResponseWriter, body interface{}) error {

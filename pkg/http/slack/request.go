@@ -1,24 +1,11 @@
 package slack
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
-
-	"github.com/hetiansu5/urlquery"
 )
-
-type FormURLEncodedRequest struct {
-	Command  string `query:"command"`
-	Text     string `query:"text"`
-	UserID   string `query:"user_id"`
-	UserName string `query:"user_name"`
-
-	Payload string `query:"payload"`
-}
 
 type CommandRequest struct {
 	Command  string
@@ -50,33 +37,31 @@ type ChallangeRequest struct {
 }
 
 func ParseRequest(r *http.Request) (*CommandRequest, *ActionsRequest, *ChallangeRequest, error) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to read request body: %w", err)
-	}
-
-	req := &FormURLEncodedRequest{}
-	if err := urlquery.Unmarshal(body, req); err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to unmarshal as query: %w", err)
-	}
-
-	if req.Payload != "" {
-		actionsRequest := &ActionsRequest{}
-		if err := json.NewDecoder(strings.NewReader(req.Payload)).Decode(actionsRequest); err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to unmarshal as json: %w", err)
+	ct := r.Header.Get("Content-Type")
+	switch ct {
+	case "application/x-www-form-urlencoded":
+		r.ParseForm()
+		if payload := r.Form.Get("payload"); payload != "" {
+			actionsRequest := &ActionsRequest{}
+			if err := json.NewDecoder(strings.NewReader(payload)).Decode(actionsRequest); err != nil {
+				return nil, nil, nil, fmt.Errorf("failed to unmarshal payload as json: %w", err)
+			}
+			return nil, actionsRequest, nil, nil
+		} else {
+			return &CommandRequest{
+				Command:  r.Form.Get("command"),
+				Text:     r.Form.Get("text"),
+				UserID:   r.Form.Get("user_id"),
+				UserName: r.Form.Get("user_name"),
+			}, nil, nil, nil
 		}
-		return nil, actionsRequest, nil, nil
-	}
-
-	challangeReq := &ChallangeRequest{}
-	if err := json.NewDecoder(bytes.NewReader(body)).Decode(challangeReq); err == nil {
+	case "application/json":
+		challangeReq := &ChallangeRequest{}
+		if err := json.NewDecoder(r.Body).Decode(challangeReq); err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to unmarshal payload as json: %w", err)
+		}
 		return nil, nil, challangeReq, nil
+	default:
+		return nil, nil, nil, fmt.Errorf("unsupported content type: %s", ct)
 	}
-
-	return &CommandRequest{
-		Command:  req.Command,
-		Text:     req.Text,
-		UserID:   req.UserID,
-		UserName: req.UserName,
-	}, nil, nil, nil
 }

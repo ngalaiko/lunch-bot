@@ -46,7 +46,8 @@ func (s *Server) registerRoutes() {
 	r.Use(middleware.CleanPath)
 	r.Use(middleware.Recoverer)
 
-	r.Post("/slack-lunch-bot", slack.NewHandler(s.roller).ServeHTTP)
+	r.With(middleware.AllowContentType("application/json", "application/x-www-form-urlencoded")).
+		Post("/slack-lunch-bot", slack.NewHandler(s.roller).ServeHTTP)
 
 	s.handler = r
 }
