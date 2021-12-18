@@ -1,10 +1,13 @@
 <script lang="ts">
-  import { roll } from './api'
-  const onButtonClick = roll
+  import rolls from '../stores/rolls'
+
+  $: lastRoll = $rolls.shift()
 </script>
 
-<button
-  type="button"
-  class="text-lg p-2 px-4 rounded-md drop-shadow-md bg-blue-500 text-white"
-  on:click={onButtonClick}>Roll</button
->
+<div>
+  {#if lastRoll}
+    last rolled {lastRoll.place.name} at {lastRoll.time}
+  {:else}
+    No rolls yet
+  {/if}
+</div>

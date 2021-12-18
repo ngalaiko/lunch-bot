@@ -7,14 +7,22 @@ export type Place = {
   chance: number
 }
 
+export type Roll = {
+  id: string
+  placeId: string
+  time: Date
+  place: Place
+}
+
 const store = writable({
-  places: [] as Place[]
+  places: [] as Place[],
+  rolls: [] as Roll[]
 })
 
 const socket = new WebSocket('ws://localhost:8000/ws')
 
-socket.addEventListener('open', function () {
-  listPlaces()
+socket.addEventListener('open', () => {
+  list()
 })
 
 const storePlace = (place: Place) => {
@@ -23,6 +31,23 @@ const storePlace = (place: Place) => {
     store.places.push(place)
     return store
   })
+}
+
+const storeRoll = (roll: Roll) => {
+  store.update(store => {
+    store.rolls = store.rolls.filter(r => r.id !== roll.id)
+    store.rolls.push(roll)
+    return store
+  })
+}
+
+const parseRoll = (roll: any): Roll => {
+  return {
+    id: roll.id,
+    placeId: roll.placeId,
+    time: new Date(roll.time),
+    place: parsePlace(roll.place)
+  }
 }
 
 const parsePlace = (place: any): Place => {
@@ -34,7 +59,7 @@ const parsePlace = (place: any): Place => {
   }
 }
 
-const listPlaces = () => {
+const list = () => {
   socket.send(
     JSON.stringify({
       id: performance.now().toString(),
@@ -64,10 +89,10 @@ export const addPlace = (name: string) => {
   )
 }
 
-socket.addEventListener('message', function (event) {
+socket.addEventListener('message', event => {
   const data = JSON.parse(event.data)
-  console.log(data)
-  data.places.map(parsePlace).forEach(storePlace)
+  if (data.places) data.places.map(parsePlace).forEach(storePlace)
+  if (data.rolls) data.rolls.map(parseRoll).forEach(storeRoll)
 })
 
 export default {

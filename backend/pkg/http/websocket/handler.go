@@ -13,7 +13,6 @@ import (
 	"lunch/pkg/lunch"
 	"lunch/pkg/lunch/boosts"
 	"lunch/pkg/lunch/places"
-	"lunch/pkg/lunch/rolls"
 	"lunch/pkg/users"
 
 	"github.com/gobwas/ws"
@@ -127,10 +126,26 @@ func (h *handler) handleBoost(ctx context.Context, req *request) (*response, err
 }
 
 func (h *handler) handleList(ctx context.Context, req *request) (*response, error) {
-	places, err := h.roller.ListPlaces(ctx, time.Now())
+	rolls, err := h.roller.ListRolls(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list rolls: %s", err)
+	}
+
+	pp, err := h.roller.ListPlaces(ctx, time.Now())
 	switch {
 	case err == nil:
-		return &response{ID: req.ID, Places: places}, nil
+		placesByID := make(map[places.ID]*lunch.Place)
+		for _, place := range pp {
+			placesByID[place.ID] = place
+		}
+		rr := make([]*Roll, 0, len(rolls))
+		for _, roll := range rolls {
+			rr = append(rr, &Roll{
+				Roll:  roll,
+				Place: placesByID[roll.PlaceID],
+			})
+		}
+		return &response{ID: req.ID, Places: pp, Rolls: rr}, nil
 	case errors.Is(err, lunch.ErrNoPlaces):
 		return &response{ID: req.ID}, nil
 	default:
@@ -142,11 +157,20 @@ func (h *handler) handleRoll(ctx context.Context, req *request) (*response, erro
 	roll, _, err := h.roller.Roll(ctx, time.Now())
 	switch {
 	case err == nil:
-		places, err := h.roller.ListPlaces(ctx, time.Now())
+		pp, err := h.roller.ListPlaces(ctx, time.Now())
 		if err != nil {
 			return nil, fmt.Errorf("failed to list chances: %s", err)
 		}
-		return &response{ID: req.ID, Rolls: []*rolls.Roll{roll}, Places: places}, nil
+		placesByID := make(map[places.ID]*lunch.Place)
+		for _, place := range pp {
+			placesByID[place.ID] = place
+		}
+		return &response{ID: req.ID, Rolls: []*Roll{
+			{
+				Roll:  roll,
+				Place: placesByID[roll.PlaceID],
+			},
+		}, Places: pp}, nil
 	case errors.Is(err, lunch.ErrNoPoints):
 		return &response{ID: req.ID, Error: "no points left"}, nil
 	default:

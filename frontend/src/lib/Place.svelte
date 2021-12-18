@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Place } from './api'
+  import type { Place } from '../api/protocol'
   export let place: Place
 </script>
 

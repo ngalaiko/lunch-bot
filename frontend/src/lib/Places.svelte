@@ -1,5 +1,5 @@
 <script lang="ts">
-  import places from './places'
+  import places from '../stores/places'
   import Place from './Place.svelte'
 </script>
 

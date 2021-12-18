@@ -22,10 +22,15 @@ type request struct {
 	Params map[string]string `json:"params"`
 }
 
+type Roll struct {
+	*rolls.Roll
+	Place *lunch.Place `json:"place"`
+}
+
 type response struct {
 	ID     string          `json:"id"`
 	Places []*lunch.Place  `json:"places,omitempty"`
-	Rolls  []*rolls.Roll   `json:"rolls,omitempty"`
+	Rolls  []*Roll         `json:"rolls,omitempty"`
 	Boosts []*boosts.Boost `json:"boosts,omitempty"`
 	Error  string          `json:"error,omitempty"`
 }

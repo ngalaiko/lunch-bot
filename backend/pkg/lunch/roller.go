@@ -56,6 +56,10 @@ func (r *Roller) NewPlace(ctx context.Context, name string) (*places.Place, erro
 	return place, nil
 }
 
+func (r *Roller) ListRolls(ctx context.Context) ([]*rolls.Roll, error) {
+	return r.rollsStore.ListRolls(ctx)
+}
+
 type Place struct {
 	*places.Place
 	Chance float64 `json:"chance"`
