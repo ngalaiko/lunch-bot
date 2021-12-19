@@ -19,7 +19,7 @@ const store = writable({
   rolls: [] as Roll[]
 })
 
-const socket = new WebSocket('ws://localhost:8000/ws')
+const socket = new WebSocket('wss://localhost:8000/ws')
 
 socket.addEventListener('open', () => {
   list()

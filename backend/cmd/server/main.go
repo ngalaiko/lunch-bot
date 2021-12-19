@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"log"
@@ -35,7 +36,9 @@ func init() {
 }
 
 var (
-	addr = flag.String("addr", ":8000", "http listen address")
+	addr    = flag.String("addr", ":8000", "http listen address")
+	tlsCert = flag.String("tls-cert", ".cert/cert.pem", "path to TLS certificate")
+	tlsKey  = flag.String("tls-key", ".cert/key.pem", "path to TLS key")
 )
 
 func main() {
@@ -65,7 +68,16 @@ func main() {
 		errCh <- srv.Shutdown(shutdownCtx)
 	}()
 
-	if err := srv.ListenAndServe(*addr); err != nil {
+	var certificates []tls.Certificate
+	if *tlsCert != "" {
+		cert, err := loadTLSCert(*tlsCert, *tlsKey)
+		if err != nil {
+			log.Fatalf("failed to load TLS certificate: %v", err)
+		}
+		certificates = append(certificates, cert)
+	}
+
+	if err := srv.ListenAndServe(*addr, certificates...); err != nil {
 		log.Printf("[ERROR] http server: %s", err)
 	}
 
@@ -75,4 +87,13 @@ func main() {
 	}
 
 	log.Printf("[INFO] application stopped")
+}
+
+func loadTLSCert(certPath, keyPath string) (tls.Certificate, error) {
+	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
+	if err != nil {
+		log.Fatalf("failed to load TLS certificate: %v", err)
+	}
+
+	return cert, nil
 }

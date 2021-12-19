@@ -17,7 +17,7 @@ import (
 )
 
 type Configuration struct {
-	SigningSecret string `envconfig:"SLACK_SIGNING_SECRET"`
+	SigningSecret string
 }
 
 func (c *Configuration) Parse() error {
@@ -26,6 +26,7 @@ func (c *Configuration) Parse() error {
 		return fmt.Errorf("SLACK_SIGNING_SECRET is not set")
 	}
 	c.SigningSecret = signingSecret
+
 	return nil
 }
 

@@ -1,11 +1,13 @@
 <script lang="ts">
-  import Places from './lib/Places.svelte'
-  import Roll from './lib/Roll.svelte'
-  import RollButton from './lib/RollButton.svelte'
+  import { Router, Route } from 'svelte-routing'
+  import Index from './pages/Index.svelte'
+  import NotFound from './pages/NotFound.svelte'
+  import Auth from './lib/Auth.svelte'
+  import OAuthSlack from './pages/oauth/Slack.svelte'
 </script>
 
-<main class="text-center p-4 mx-0">
-  <Roll />
-  <RollButton />
-  <Places />
-</main>
+<Router>
+  <Route path="/oauth/slack"><OAuthSlack /></Route>
+  <Route path="/"><Auth><Index /></Auth></Route>
+  <Route path="*"><NotFound /></Route>
+</Router>

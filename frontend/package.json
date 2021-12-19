@@ -5,7 +5,8 @@
     "serve": "vite preview",
     "format": "prettier --write ./src/**/*.{js,svelte,html,ts}",
     "lint": "eslint './src/**/*.{js,ts,svelte}'",
-    "lint:fix": "eslint --fix './src/**/*.{js,ts,svelte}'"
+    "lint:fix": "eslint --fix './src/**/*.{js,ts,svelte}'",
+    "cert": "rm -rf .cert && mkdir -p .cert && mkcert -key-file ./.cert/key.pem -cert-file ./.cert/cert.pem 'localhost'"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^1.0.0-next.11",
@@ -23,6 +24,7 @@
     "prettier-plugin-svelte": "^2.5.0",
     "svelte": "^3.35.0",
     "svelte-preprocess": "^4.9.8",
+    "svelte-routing": "^1.6.0",
     "typescript": "^4.2.3",
     "vite": "^2.1.0"
   },

@@ -3,7 +3,9 @@ package http
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"time"
 
@@ -26,6 +28,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) ListenAndServe(addr string, certs ...tls.Certificate) error {
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return fmt.Errorf("failed to listen on %s: %w", addr, err)
+	}
+
 	s.httpServer = &http.Server{
 		Addr:    addr,
 		Handler: s,
@@ -33,7 +40,9 @@ func (s *Server) ListenAndServe(addr string, certs ...tls.Certificate) error {
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  120 * time.Second,
-		TLSConfig: &tls.Config{
+	}
+	if len(certs) > 0 {
+		tlsConfig := &tls.Config{
 			Certificates:     certs,
 			NextProtos:       []string{"h2", "http/1.1"},
 			MinVersion:       tls.VersionTLS12,
@@ -47,14 +56,14 @@ func (s *Server) ListenAndServe(addr string, certs ...tls.Certificate) error {
 				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 			},
 			PreferServerCipherSuites: true,
-		},
-	}
-	if len(certs) > 0 {
+		}
+		s.httpServer.TLSConfig = tlsConfig
+		ln = tls.NewListener(ln, tlsConfig)
 		log.Printf("[INFO] listening https on %s", addr)
 	} else {
 		log.Printf("[INFO] listening http on %s", addr)
 	}
-	if err := s.httpServer.ListenAndServe(); err != http.ErrServerClosed {
+	if err := s.httpServer.Serve(ln); err != http.ErrServerClosed {
 		return err
 	}
 	return nil
