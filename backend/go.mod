@@ -9,9 +9,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.4.1
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.8.0
 	github.com/go-chi/chi/v5 v5.0.7
+	github.com/go-chi/cors v1.2.0
 	github.com/gobwas/ws v1.1.0
 	github.com/google/uuid v1.3.0
 	github.com/iamatypeofwalrus/shim v1.0.0
+	go.etcd.io/bbolt v1.3.6
 	gopkg.in/square/go-jose.v2 v2.6.0
 )
 
@@ -28,7 +30,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.4.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.7.1 // indirect
 	github.com/aws/smithy-go v1.9.0 // indirect
-	github.com/go-chi/cors v1.2.0 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
