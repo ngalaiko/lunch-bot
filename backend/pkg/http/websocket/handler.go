@@ -30,17 +30,16 @@ func Handler(roller *lunch.Roller) http.Handler {
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if _, ok := users.FromContext(r.Context()); !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
 	conn, _, _, err := ws.UpgradeHTTP(r, w)
 	if err != nil {
 		return
 	}
 	defer conn.Close()
-
-	// TODO: add auth
-	ctx := users.NewContext(r.Context(), &users.User{
-		ID:   "test",
-		Name: "test",
-	})
 
 	for {
 		msg, op, err := wsutil.ReadClientData(conn)
@@ -60,7 +59,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		resp, err := h.handle(ctx, req)
+		resp, err := h.handle(r.Context(), req)
 		if err != nil {
 			log.Printf("[ERROR] failed to handle websocket message: %s", err)
 

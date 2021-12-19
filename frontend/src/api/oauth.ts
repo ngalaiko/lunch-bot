@@ -9,7 +9,8 @@ const slack = async (code: string, redirectUri: string): Promise<void> => {
     body: JSON.stringify({
       code: code,
       redirect_uri: redirectUri
-    })
+    }),
+    credentials: 'include'
   })
   if (response.status != 200) throw new Error('failed to exchange slack code')
 }

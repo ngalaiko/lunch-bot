@@ -11,12 +11,13 @@ import (
 	"fmt"
 	"time"
 
+	"lunch/pkg/jwt/keys"
+	storage_keys "lunch/pkg/jwt/keys/storage"
+	"lunch/pkg/users"
+
 	"github.com/google/uuid"
 	jose "gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
-
-	"lunch/pkg/jwt/keys"
-	storage_keys "lunch/pkg/jwt/keys/storage"
 )
 
 // Known errors.
@@ -26,29 +27,26 @@ var (
 )
 
 const (
-	defaultIssuer = "miniboard.app"
-	validFor      = 15 * time.Minute
+	defaultIssuer = "lunch.bot"
+	validFor      = 24 * time.Hour * 28 // 28 days
 )
-
-type logger interface {
-	Error(string, ...interface{})
-	Info(string, ...interface{})
-}
 
 // Service allows to issue and verify jwt tokens.
 type Service struct {
-	logger       logger
 	keysDatabase storage_keys.Storage
 
 	signer jose.Signer
 }
 
 // NewService creates a new jwt service.
-func NewService(keysStorage storage_keys.Storage, logger logger) *Service {
+func NewService(keysStorage storage_keys.Storage) *Service {
 	return &Service{
-		logger:       logger,
 		keysDatabase: keysStorage,
 	}
+}
+
+type customClaims struct {
+	Name string `json:"name"`
 }
 
 func (s *Service) init(ctx context.Context) error {
@@ -93,7 +91,7 @@ func (s *Service) init(ctx context.Context) error {
 }
 
 // NewToken creates a new signed JWT.
-func (s *Service) NewToken(ctx context.Context, userID string) (*Token, error) {
+func (s *Service) NewToken(ctx context.Context, user *users.User) (*Token, error) {
 	if s.signer == nil {
 		if err := s.init(ctx); err != nil {
 			return nil, err
@@ -104,19 +102,22 @@ func (s *Service) NewToken(ctx context.Context, userID string) (*Token, error) {
 	claims := &jwt.Claims{
 		ID:       uuid.New().String(),
 		Issuer:   defaultIssuer,
-		Subject:  userID,
+		Subject:  user.ID,
 		IssuedAt: jwt.NewNumericDate(now),
 		Expiry:   jwt.NewNumericDate(now.Add(validFor)),
 	}
+	customClaims := &customClaims{
+		Name: user.Name,
+	}
 
-	token, err := jwt.Signed(s.signer).Claims(claims).CompactSerialize()
+	token, err := jwt.Signed(s.signer).Claims(claims).Claims(customClaims).CompactSerialize()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a signed token: %w", err)
 	}
 
 	return &Token{
 		Token:     token,
-		UserID:    userID,
+		User:      user,
 		ExpiresAt: claims.Expiry.Time(),
 	}, nil
 }
@@ -144,7 +145,8 @@ func (s *Service) Verify(ctx context.Context, token string) (*Token, error) {
 	}
 
 	claims := &jwt.Claims{}
-	if err := jwtoken.Claims(pubicKey, claims); err != nil {
+	customClaims := &customClaims{}
+	if err := jwtoken.Claims(pubicKey, claims, customClaims); err != nil {
 		return nil, ErrInvalidToken
 	}
 
@@ -155,16 +157,15 @@ func (s *Service) Verify(ctx context.Context, token string) (*Token, error) {
 	switch {
 	case validateErr == nil:
 		return &Token{
-			Token:     token,
-			UserID:    claims.Subject,
+			Token: token,
+			User: &users.User{
+				ID:   claims.Subject,
+				Name: customClaims.Name,
+			},
 			ExpiresAt: claims.Expiry.Time(),
 		}, nil
 	case errors.Is(validateErr, jwt.ErrExpired):
-		return &Token{
-			Token:     token,
-			UserID:    claims.Subject,
-			ExpiresAt: claims.Expiry.Time(),
-		}, ErrTokenExpired
+		return nil, ErrTokenExpired
 	default:
 		return nil, ErrInvalidToken
 	}

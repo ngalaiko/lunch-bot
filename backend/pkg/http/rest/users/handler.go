@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"lunch/pkg/jwt"
+	"lunch/pkg/users"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -15,17 +15,14 @@ func getMe() http.HandlerFunc {
 		ID string `json:"id"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		token, ok := jwt.FromContext(r.Context())
+		user, ok := users.FromContext(r.Context())
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		resp := &response{
-			ID: token.UserID,
-		}
-
-		if err := json.NewEncoder(w).Encode(resp); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(user); err != nil {
 			log.Printf("[ERROR] failed to encode response: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return

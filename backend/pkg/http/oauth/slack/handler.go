@@ -8,6 +8,10 @@ import (
 	"net/url"
 	"os"
 	"strings"
+
+	"lunch/pkg/http/auth"
+	"lunch/pkg/jwt"
+	"lunch/pkg/users"
 )
 
 type Configuration struct {
@@ -31,7 +35,7 @@ func (c *Configuration) Parse() error {
 	return nil
 }
 
-func Handler(cfg *Configuration) http.HandlerFunc {
+func Handler(cfg *Configuration, jwtService *jwt.Service) http.HandlerFunc {
 	type request struct {
 		Code        string `json:"code"`
 		RedirectURI string `json:"redirect_uri"`
@@ -127,7 +131,17 @@ func Handler(cfg *Configuration) http.HandlerFunc {
 			return
 		}
 
-		// todo: set cookie
-		fmt.Printf("\nnikitag: %+v\n\n", identityResponseBody.User)
+		token, err := jwtService.NewToken(r.Context(), &users.User{
+			ID:   identityResponseBody.User.ID,
+			Name: identityResponseBody.User.Name,
+		})
+		if err != nil {
+			log.Printf("[ERROR] failed to generate token: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		secure := r.TLS != nil
+		auth.SetCookie(w, token, secure)
 	}
 }

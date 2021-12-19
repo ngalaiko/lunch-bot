@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"lunch/pkg/http"
+	"lunch/pkg/jwt"
+	storage_jwt_keys "lunch/pkg/jwt/keys/storage"
 	"lunch/pkg/lunch"
 	storage_boosts "lunch/pkg/lunch/boosts/storage"
 	"lunch/pkg/lunch/places"
@@ -20,9 +22,15 @@ import (
 )
 
 var (
-	placesStore = storage_places.NewMemory()
-	boostsStore = storage_boosts.NewMemory()
-	rollsStore  = storage_rolls.NewMemory()
+	placesStore  = storage_places.NewMemory()
+	boostsStore  = storage_boosts.NewMemory()
+	rollsStore   = storage_rolls.NewMemory()
+	jwtKeysStore = storage_jwt_keys.NewMemory()
+)
+
+var (
+	roller     = lunch.New(placesStore, boostsStore, rollsStore)
+	jwtService = jwt.NewService(jwtKeysStore)
 )
 
 func init() {
@@ -49,8 +57,7 @@ func main() {
 		log.Fatalf("failed to parse configuration: %v", err)
 	}
 
-	roller := lunch.New(placesStore, boostsStore, rollsStore)
-	srv := http.NewServer(cfg, roller)
+	srv := http.NewServer(cfg, roller, jwtService)
 
 	// Wait for shut down in a separate goroutine.
 	errCh := make(chan error)

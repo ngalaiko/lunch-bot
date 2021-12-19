@@ -6,6 +6,8 @@ import (
 	"os"
 
 	"lunch/pkg/http"
+	"lunch/pkg/jwt"
+	storage_jwt_keys "lunch/pkg/jwt/keys/storage"
 	"lunch/pkg/lunch"
 	storage_boosts "lunch/pkg/lunch/boosts/storage"
 	storage_places "lunch/pkg/lunch/places/storage"
@@ -32,6 +34,12 @@ var (
 	placesStore   = storage_places.NewDynamoDB(dynamodbStore)
 	boostsStore   = storage_boosts.NewDynamoDB(dynamodbStore)
 	rollsStore    = storage_rolls.NewDynamoDB(dynamodbStore)
+	jwtKeysStore  = storage_jwt_keys.NewMemory()
+)
+
+var (
+	roller     = lunch.New(placesStore, boostsStore, rollsStore)
+	jwtService = jwt.NewService(jwtKeysStore)
 )
 
 func main() {
@@ -40,7 +48,6 @@ func main() {
 	if err := cfg.Parse(); err != nil {
 		log.Fatalf("failed to parse configuration: %v", err)
 	}
-	roller := lunch.New(placesStore, boostsStore, rollsStore)
-	handler := shim.New(http.NewHandler(cfg, roller), shim.SetDebugLogger(log))
+	handler := shim.New(http.NewHandler(cfg, roller, jwtService), shim.SetDebugLogger(log))
 	lambda.StartWithContext(context.Background(), handler.Handle)
 }

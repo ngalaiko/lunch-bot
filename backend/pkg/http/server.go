@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"lunch/pkg/jwt"
 	"lunch/pkg/lunch"
 )
 
@@ -17,9 +18,9 @@ type Server struct {
 	httpServer *http.Server
 }
 
-func NewServer(cfg *Configuration, roller *lunch.Roller) *Server {
+func NewServer(cfg *Configuration, roller *lunch.Roller, jwtService *jwt.Service) *Server {
 	return &Server{
-		handler: NewHandler(cfg, roller),
+		handler: NewHandler(cfg, roller, jwtService),
 	}
 }
 

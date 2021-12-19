@@ -1,10 +1,14 @@
 package jwt
 
-import "time"
+import (
+	"time"
+
+	"lunch/pkg/users"
+)
 
 // Token contains information about an authorized user.
 type Token struct {
-	Token     string    `json:"token"`
-	UserID    string    `json:"user_id"`
-	ExpiresAt time.Time `json:"expires_at"`
+	Token     string      `json:"token"`
+	User      *users.User `json:"user"`
+	ExpiresAt time.Time   `json:"expires_at"`
 }
