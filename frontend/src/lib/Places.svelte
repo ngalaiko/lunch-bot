@@ -1,10 +1,16 @@
 <script lang="ts">
-  import places from '../stores/places'
+  import { places } from '../api'
   import Place from './Place.svelte'
 </script>
 
 <ul>
-  {#each $places as place}
-    <Place {place} />
-  {/each}
+  {#await places.list()}
+    Loading...
+  {:then}
+    {#each $places as place}
+      <Place {place} />
+    {/each}
+  {:catch e}
+    <p>Error: {e.message}</p>
+  {/await}
 </ul>

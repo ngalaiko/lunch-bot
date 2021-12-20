@@ -83,10 +83,12 @@ func (h *handler) handle(ctx context.Context, req *request) (*response, error) {
 		return h.handleAdd(ctx, req)
 	case methodBoost:
 		return h.handleBoost(ctx, req)
-	case methodList:
-		return h.handleList(ctx, req)
-	case methodRoll:
-		return h.handleRoll(ctx, req)
+	case methodListPlaces:
+		return h.handleListPlaces(ctx, req)
+	case methodListRolls:
+		return h.handleListRolls(ctx, req)
+	case methodCreateRoll:
+		return h.handleCreateRoll(ctx, req)
 	default:
 		return &response{ID: req.ID, Error: fmt.Sprintf("unknown method '%s'", req.Method)}, nil
 	}
@@ -124,27 +126,38 @@ func (h *handler) handleBoost(ctx context.Context, req *request) (*response, err
 	}
 }
 
-func (h *handler) handleList(ctx context.Context, req *request) (*response, error) {
-	rolls, err := h.roller.ListRolls(ctx)
+func (h *handler) handleListRolls(ctx context.Context, req *request) (*response, error) {
+	rr, err := h.roller.ListRolls(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list rolls: %s", err)
 	}
 
 	pp, err := h.roller.ListPlaces(ctx, time.Now())
+	if err != nil {
+		return nil, fmt.Errorf("failed to list places: %s", err)
+	}
+
+	placesByID := make(map[places.ID]*lunch.Place, len(pp))
+	for _, p := range pp {
+		placesByID[p.ID] = p
+	}
+
+	rolls := make([]*Roll, 0, len(rr))
+	for _, r := range rr {
+		rolls = append(rolls, &Roll{
+			Roll:  r,
+			Place: placesByID[r.PlaceID],
+		})
+	}
+
+	return &response{ID: req.ID, Rolls: rolls}, nil
+}
+
+func (h *handler) handleListPlaces(ctx context.Context, req *request) (*response, error) {
+	pp, err := h.roller.ListPlaces(ctx, time.Now())
 	switch {
 	case err == nil:
-		placesByID := make(map[places.ID]*lunch.Place)
-		for _, place := range pp {
-			placesByID[place.ID] = place
-		}
-		rr := make([]*Roll, 0, len(rolls))
-		for _, roll := range rolls {
-			rr = append(rr, &Roll{
-				Roll:  roll,
-				Place: placesByID[roll.PlaceID],
-			})
-		}
-		return &response{ID: req.ID, Places: pp, Rolls: rr}, nil
+		return &response{ID: req.ID, Places: pp}, nil
 	case errors.Is(err, lunch.ErrNoPlaces):
 		return &response{ID: req.ID}, nil
 	default:
@@ -152,7 +165,7 @@ func (h *handler) handleList(ctx context.Context, req *request) (*response, erro
 	}
 }
 
-func (h *handler) handleRoll(ctx context.Context, req *request) (*response, error) {
+func (h *handler) handleCreateRoll(ctx context.Context, req *request) (*response, error) {
 	roll, _, err := h.roller.Roll(ctx, time.Now())
 	switch {
 	case err == nil:
@@ -169,7 +182,7 @@ func (h *handler) handleRoll(ctx context.Context, req *request) (*response, erro
 				Roll:  roll,
 				Place: placesByID[roll.PlaceID],
 			},
-		}, Places: pp}, nil
+		}}, nil
 	case errors.Is(err, lunch.ErrNoPoints):
 		return &response{ID: req.ID, Error: "no points left"}, nil
 	default:

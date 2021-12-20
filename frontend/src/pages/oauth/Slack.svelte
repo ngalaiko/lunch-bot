@@ -1,6 +1,6 @@
 <script lang="ts">
   import { navigate } from 'svelte-routing'
-  import oauth from '../../api/oauth'
+  import { oauth } from '../../api'
 
   const params = new URLSearchParams(window.location.search)
 

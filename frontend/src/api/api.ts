@@ -1,5 +1,4 @@
 const domain = 'localhost:8000'
 
-const url = `https://${domain}`
-
-export { url }
+export const restUri = `https://${domain}`
+export const websocketUri = `wss://${domain}/ws`

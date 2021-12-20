@@ -1,21 +1,25 @@
-import { url as apiURL } from './api'
+import { restUri } from './api'
+import { writable } from 'svelte/store'
 
 export type User = {
   id: string
 }
 
-const getMe = async (): Promise<User | null> => {
-  const response = await fetch(`${apiURL}/api/users/me`, {
+const store = writable<User | null>(null)
+
+const getMe = async (): Promise<void> => {
+  const response = await fetch(`${restUri}/api/users/me`, {
     method: 'GET',
     credentials: 'include'
   })
-  if (response.status !== 200) return null
+  if (response.status !== 200) throw new Error('failed to get user')
   const body = await response.json()
-  return {
+  store.set({
     id: body.id
-  }
+  })
 }
 
 export default {
-  getMe
+  getMe,
+  subscribe: store.subscribe
 }

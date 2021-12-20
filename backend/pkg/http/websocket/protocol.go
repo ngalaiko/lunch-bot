@@ -9,11 +9,12 @@ import (
 type method string
 
 const (
-	methodUndefined method = ""
-	methodRoll      method = "roll"
-	methodList      method = "list"
-	methodBoost     method = "boost"
-	methodAdd       method = "add"
+	methodUndefined  method = ""
+	methodListPlaces method = "places/list"
+	methodListRolls  method = "rolls/list"
+	methodCreateRoll method = "rolls/create"
+	methodBoost      method = "boost"
+	methodAdd        method = "add"
 )
 
 type request struct {

@@ -1,7 +1,7 @@
-import { url as apiURL } from './api'
+import { restUri } from './api'
 
 const slack = async (code: string, redirectUri: string): Promise<void> => {
-  const response = await fetch(`${apiURL}/oauth/slack`, {
+  const response = await fetch(`${restUri}/oauth/slack`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'

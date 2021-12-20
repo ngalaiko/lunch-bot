@@ -1,7 +1,12 @@
 <script lang="ts">
-  import { roll } from '../api/protocol'
+  import { rolls, places } from '../api'
 
-  const onButtonClick = roll
+  const onButtonClick = () => {
+    rolls
+      .roll()
+      .then(() => places.list())
+      .catch(alert)
+  }
 </script>
 
 <div>
