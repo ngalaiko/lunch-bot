@@ -39,7 +39,7 @@ const list = async (): Promise<void> => {
   storeResponse(response)
 }
 
-const roll = async (): Promise<void> => {
+const create = async (): Promise<void> => {
   await socket.open()
   const response = await socket.sendRequest({ method: 'rolls/create' })
   if (response.error) throw new Error(response.error)
@@ -47,7 +47,7 @@ const roll = async (): Promise<void> => {
 }
 
 export default {
-  roll,
+  create,
   list,
   subscribe: store.subscribe
 }

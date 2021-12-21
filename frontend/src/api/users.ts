@@ -3,6 +3,7 @@ import { writable } from 'svelte/store'
 
 export type User = {
   id: string
+  name: string
 }
 
 const store = writable<User | null>(null)
@@ -15,7 +16,8 @@ const getMe = async (): Promise<void> => {
   if (response.status !== 200) throw new Error('failed to get user')
   const body = await response.json()
   store.set({
-    id: body.id
+    id: body.id,
+    name: body.name
   })
 }
 

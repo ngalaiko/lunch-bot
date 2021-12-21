@@ -79,22 +79,24 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) handle(ctx context.Context, req *request) (*response, error) {
 	switch req.Method {
-	case methodAdd:
-		return h.handleAdd(ctx, req)
-	case methodBoost:
-		return h.handleBoost(ctx, req)
-	case methodListPlaces:
-		return h.handleListPlaces(ctx, req)
-	case methodListRolls:
-		return h.handleListRolls(ctx, req)
-	case methodCreateRoll:
-		return h.handleCreateRoll(ctx, req)
+	case methodPlacesList:
+		return h.handlePlacesList(ctx, req)
+	case methodPlacesCreate:
+		return h.handlePlacesCreate(ctx, req)
+
+	case methodBoostsCreate:
+		return h.handleBoostsCreate(ctx, req)
+
+	case methodRollsCreate:
+		return h.handleRollsCreate(ctx, req)
+	case methodRollsList:
+		return h.handleRollsList(ctx, req)
 	default:
 		return &response{ID: req.ID, Error: fmt.Sprintf("unknown method '%s'", req.Method)}, nil
 	}
 }
 
-func (h *handler) handleAdd(ctx context.Context, req *request) (*response, error) {
+func (h *handler) handlePlacesCreate(ctx context.Context, req *request) (*response, error) {
 	name, ok := req.Params["name"]
 	if !ok {
 		return &response{ID: req.ID, Error: "'name' parameter must be set"}, nil
@@ -109,10 +111,10 @@ func (h *handler) handleAdd(ctx context.Context, req *request) (*response, error
 	return &response{ID: req.ID, Places: places}, nil
 }
 
-func (h *handler) handleBoost(ctx context.Context, req *request) (*response, error) {
-	placeID, ok := req.Params["id"]
+func (h *handler) handleBoostsCreate(ctx context.Context, req *request) (*response, error) {
+	placeID, ok := req.Params["placeId"]
 	if !ok {
-		return &response{ID: req.ID, Error: "'id' parameter must be set"}, nil
+		return &response{ID: req.ID, Error: "'placeId' parameter must be set"}, nil
 	}
 
 	boost, err := h.roller.Boost(ctx, places.ID(placeID), time.Now())
@@ -126,7 +128,7 @@ func (h *handler) handleBoost(ctx context.Context, req *request) (*response, err
 	}
 }
 
-func (h *handler) handleListRolls(ctx context.Context, req *request) (*response, error) {
+func (h *handler) handleRollsList(ctx context.Context, req *request) (*response, error) {
 	rr, err := h.roller.ListRolls(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list rolls: %s", err)
@@ -153,7 +155,7 @@ func (h *handler) handleListRolls(ctx context.Context, req *request) (*response,
 	return &response{ID: req.ID, Rolls: rolls}, nil
 }
 
-func (h *handler) handleListPlaces(ctx context.Context, req *request) (*response, error) {
+func (h *handler) handlePlacesList(ctx context.Context, req *request) (*response, error) {
 	pp, err := h.roller.ListPlaces(ctx, time.Now())
 	switch {
 	case err == nil:
@@ -165,7 +167,7 @@ func (h *handler) handleListPlaces(ctx context.Context, req *request) (*response
 	}
 }
 
-func (h *handler) handleCreateRoll(ctx context.Context, req *request) (*response, error) {
+func (h *handler) handleRollsCreate(ctx context.Context, req *request) (*response, error) {
 	roll, _, err := h.roller.Roll(ctx, time.Now())
 	switch {
 	case err == nil:

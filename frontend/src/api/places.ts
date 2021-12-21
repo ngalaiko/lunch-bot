@@ -10,10 +10,7 @@ export type Place = {
 
 const store = writable<Place[]>([])
 
-const list = async (): Promise<void> => {
-  await socket.open()
-  const response = await socket.sendRequest({ method: 'places/list' })
-  if (response.error) throw new Error(response.error)
+const storeResponse = (response: any) => {
   response.places &&
     response.places
       .map((place: any): Place => {
@@ -29,7 +26,23 @@ const list = async (): Promise<void> => {
       )
 }
 
+const create = async (name: string): Promise<void> => {
+  await socket.open()
+  const response = await socket.sendRequest({ method: 'places/create', params: { name } })
+  if (response.error) throw new Error(response.error)
+  response.place && store.update(places => places.concat(response.place))
+  storeResponse(response)
+}
+
+const list = async (): Promise<void> => {
+  await socket.open()
+  const response = await socket.sendRequest({ method: 'places/list' })
+  if (response.error) throw new Error(response.error)
+  storeResponse(response)
+}
+
 export default {
   list,
+  create,
   subscribe: store.subscribe
 }

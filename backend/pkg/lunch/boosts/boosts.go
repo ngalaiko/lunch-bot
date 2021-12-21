@@ -13,8 +13,8 @@ type ID string
 
 type Boost struct {
 	ID      ID        `dynamodbav:"id" json:"id"`
-	UserID  string    `dynamodbav:"user_id" json:"user_id"`
-	PlaceID places.ID `dynamodbav:"place_id" json:"place_id"`
+	UserID  string    `dynamodbav:"user_id" json:"userId"`
+	PlaceID places.ID `dynamodbav:"place_id" json:"placeId"`
 	Time    time.Time `dynamodbav:"time,unixtime" json:"time"`
 }
 
