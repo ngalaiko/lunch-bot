@@ -38,8 +38,10 @@ func (c *Configuration) Parse() error {
 func Handler(cfg *Configuration, jwtService *jwt.Service) http.HandlerFunc {
 	type request struct {
 		Code        string `json:"code"`
-		RedirectURI string `json:"redirect_uri"`
+		RedirectURI string `json:"redirectUri"`
 	}
+
+	type response struct{}
 
 	type slackAuthedUser struct {
 		ID          string `json:"id"`
@@ -89,15 +91,15 @@ func Handler(cfg *Configuration, jwtService *jwt.Service) http.HandlerFunc {
 		}
 		defer resp.Body.Close()
 
-		var response slackOAuthResponse
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		var oatuhResponse slackOAuthResponse
+		if err := json.NewDecoder(resp.Body).Decode(&oatuhResponse); err != nil {
 			log.Printf("[ERROR] failed to decode oauth response: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		if !response.OK {
-			log.Printf("[ERROR] failed to get access token: %s", response.Error)
+		if !oatuhResponse.OK {
+			log.Printf("[ERROR] failed to get access token: %s", oatuhResponse.Error)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -108,7 +110,7 @@ func Handler(cfg *Configuration, jwtService *jwt.Service) http.HandlerFunc {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		identityRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", response.AuthedUser.AccessToken))
+		identityRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", oatuhResponse.AuthedUser.AccessToken))
 
 		identityResponse, err := client.Do(identityRequest.WithContext(r.Context()))
 		if err != nil {
@@ -143,5 +145,12 @@ func Handler(cfg *Configuration, jwtService *jwt.Service) http.HandlerFunc {
 
 		secure := r.TLS != nil
 		auth.SetCookie(w, token, secure)
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(&response{}); err != nil {
+			log.Printf("[ERROR] failed to encode response: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
 }

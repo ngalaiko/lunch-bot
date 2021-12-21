@@ -1,5 +1,5 @@
-import { restUri } from './api'
 import { writable } from 'svelte/store'
+import { rest } from './protocols'
 
 export type User = {
   id: string
@@ -9,15 +9,10 @@ export type User = {
 const store = writable<User | null>(null)
 
 const getMe = async (): Promise<void> => {
-  const response = await fetch(`${restUri}/api/users/me`, {
-    method: 'GET',
-    credentials: 'include'
-  })
-  if (response.status !== 200) throw new Error('failed to get user')
-  const body = await response.json()
+  const user = await rest.get('api/users/me')
   store.set({
-    id: body.id,
-    name: body.name
+    id: user.id,
+    name: user.name
   })
 }
 
