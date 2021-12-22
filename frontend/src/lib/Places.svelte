@@ -3,14 +3,14 @@
   import Place from './Place.svelte'
 </script>
 
-<ul>
-  {#await places.list()}
-    Loading...
-  {:then}
+{#await places.list()}
+  <p>Loading...</p>
+{:then}
+  <ul>
     {#each $places as place}
       <Place {place} />
     {/each}
-  {:catch e}
-    <p>Error: {e.message}</p>
-  {/await}
-</ul>
+  </ul>
+{:catch e}
+  <p>Error: {e.message}</p>
+{/await}

@@ -2,7 +2,7 @@
   import { Router, Route } from 'svelte-routing'
   import Index from './pages/Index.svelte'
   import NotFound from './pages/NotFound.svelte'
-  import Auth from './lib/Auth.svelte'
+  import { Auth } from './templates'
   import OAuthSlack from './pages/oauth/Slack.svelte'
 </script>
 

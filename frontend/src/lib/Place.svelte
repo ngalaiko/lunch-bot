@@ -1,12 +1,14 @@
 <script lang="ts">
-  import type { Place } from '../api'
-  import BoostButton from './BoostButton.svelte'
+  import { boosts, places, Place } from '../api'
+  import { Button } from '../atoms'
   export let place: Place
+
+  const onButtonClick = () => boosts.create(place.id).then(places.list).catch(alert)
 </script>
 
 <div class="flex">
   <p>
     {place.name} - {place.chance * 100}%
   </p>
-  <BoostButton {place} />
+  <Button on:click={onButtonClick}>Boost</Button>
 </div>
