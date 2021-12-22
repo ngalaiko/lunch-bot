@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store'
-import socket from './socket'
+import {websocket} from './protocols'
 import type { Place } from './places'
 
 export type Roll = {
@@ -33,15 +33,15 @@ const storeResponse = (response: any) => {
 }
 
 const list = async (): Promise<void> => {
-  await socket.open()
-  const response = await socket.sendRequest({ method: 'rolls/list' })
+  await websocket.open()
+  const response = await websocket.request({ method: 'rolls/list' })
   if (response.error) throw new Error(response.error)
   storeResponse(response)
 }
 
 const create = async (): Promise<void> => {
-  await socket.open()
-  const response = await socket.sendRequest({ method: 'rolls/create' })
+  await websocket.open()
+  const response = await websocket.request({ method: 'rolls/create' })
   if (response.error) throw new Error(response.error)
   storeResponse(response)
 }

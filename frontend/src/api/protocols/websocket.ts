@@ -1,6 +1,7 @@
+const websocketUri = 'wss://localhost:8000/ws'
+
 import WebSocketAsPromised from 'websocket-as-promised'
 import ReconnectingWebSocket from 'reconnecting-websocket'
-import { websocketUri } from './api'
 
 const wsp = new WebSocketAsPromised(websocketUri, {
   // replace websocket implementation
@@ -16,5 +17,5 @@ const wsp = new WebSocketAsPromised(websocketUri, {
 
 export default {
   open: (): Promise<Event> => wsp.open(),
-  sendRequest: (request: any): Promise<any> => wsp.sendRequest(request)
+  request: (request: any): Promise<any> => wsp.sendRequest(request)
 }

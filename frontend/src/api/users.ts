@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store'
-import { rest } from './protocols'
+import { http } from './protocols'
 
 export type User = {
   id: string
@@ -9,7 +9,7 @@ export type User = {
 const store = writable<User | null>(null)
 
 const getMe = async (): Promise<void> => {
-  const user = await rest.get('api/users/me')
+  const user = await http.get('api/users/me')
   store.set({
     id: user.id,
     name: user.name

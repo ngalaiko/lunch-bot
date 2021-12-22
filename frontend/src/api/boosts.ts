@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store'
-import socket from './socket'
+import { websocket } from './protocols'
 
 export type Boost = {
   id: string
@@ -27,8 +27,8 @@ const storeResponse = (response: any) => {
 }
 
 const create = async (placeId: string): Promise<void> => {
-  await socket.open()
-  const response = await socket.sendRequest({
+  await websocket.open()
+  const response = await websocket.request({
     method: 'boosts/create',
     params: { placeId }
   })
