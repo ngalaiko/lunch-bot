@@ -35,9 +35,10 @@ func NewHandler(cfg *Configuration, roller *lunch.Roller, jwtService *jwt.Servic
 	}))
 	r.Use(auth.Parser(jwtService))
 
+	r.Use(middleware.RouteHeaders().Route("Upgrade", "websocket", middleware.New(websocket.Handler(roller))).Handler)
+
 	r.With(middleware.AllowContentType("application/json", "application/x-www-form-urlencoded")).
 		Post("/slack-lunch-bot", slack.NewHandler(cfg.Slack, roller).ServeHTTP)
-	r.Get("/ws", websocket.Handler(roller).ServeHTTP)
 	r.Mount("/oauth", oauth.Handler(cfg.OAuth, jwtService))
 	r.Mount("/api", rest.Handler())
 

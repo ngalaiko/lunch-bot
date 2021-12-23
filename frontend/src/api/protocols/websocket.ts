@@ -1,4 +1,4 @@
-const websocketUri = 'wss://localhost:8000/ws'
+const websocketUri = 'wss://localhost:8000'
 
 import WebSocketAsPromised from 'websocket-as-promised'
 import ReconnectingWebSocket from 'reconnecting-websocket'

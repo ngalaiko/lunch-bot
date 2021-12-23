@@ -15,6 +15,7 @@ import (
 	"lunch/pkg/lunch/places"
 	"lunch/pkg/users"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 )
@@ -24,9 +25,9 @@ type handler struct {
 }
 
 func Handler(roller *lunch.Roller) http.Handler {
-	return &handler{
-		roller: roller,
-	}
+	r := chi.NewMux()
+	r.Get("/", (&handler{roller: roller}).ServeHTTP)
+	return r
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
