@@ -1,0 +1,4 @@
+#!/usr/bin/execlineb -S0
+
+# if reproxy fails - container fails too
+s6-svscanctl -t /var/run/s6/services

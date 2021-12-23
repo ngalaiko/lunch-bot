@@ -2,7 +2,7 @@
   import { SlackIcon } from '../atoms'
 
   const redirectUri = encodeURIComponent(
-    `${location.origin}/oauth/slack?next=${encodeURIComponent(location.href)}`
+    `${location.origin}/api/oauth/slack?next=${encodeURIComponent(location.href)}`
   )
   const clientId = '1693172761239.2533308174103'
   const userScope = 'identity.basic'

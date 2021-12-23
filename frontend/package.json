@@ -1,4 +1,5 @@
 {
+  "private": true,
   "scripts": {
     "dev": "cross-env NODE_ENV=development vite",
     "build": "vite build",

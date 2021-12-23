@@ -43,9 +43,11 @@ func init() {
 }
 
 var (
-	addr    = flag.String("addr", ":8000", "http listen address")
-	tlsCert = flag.String("tls-cert", ".cert/cert.pem", "path to TLS certificate")
-	tlsKey  = flag.String("tls-key", ".cert/key.pem", "path to TLS key")
+	addr = flag.String("addr", ":8000", "http listen address")
+
+	enableTLS = flag.Bool("tls", false, "enable TLS")
+	tlsCert   = flag.String("tls-cert", ".cert/cert.pem", "path to TLS certificate")
+	tlsKey    = flag.String("tls-key", ".cert/key.pem", "path to TLS key")
 )
 
 func main() {
@@ -81,7 +83,7 @@ func main() {
 	}()
 
 	var certificates []tls.Certificate
-	if *tlsCert != "" {
+	if *enableTLS {
 		cert, err := loadTLSCert(*tlsCert, *tlsKey)
 		if err != nil {
 			log.Fatalf("failed to load TLS certificate: %v", err)

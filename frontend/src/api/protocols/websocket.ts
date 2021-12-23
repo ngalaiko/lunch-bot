@@ -1,4 +1,6 @@
-const websocketUri = 'wss://localhost:8000'
+const websocketUri = import.meta.env.DEV
+  ? 'wss://localhost:8000/api/ws'
+  : `wss://${location.hostname}/api/ws`
 
 import WebSocketAsPromised from 'websocket-as-promised'
 import ReconnectingWebSocket from 'reconnecting-websocket'

@@ -6,7 +6,6 @@ import (
 	"lunch/pkg/http/auth"
 	"lunch/pkg/http/oauth"
 	"lunch/pkg/http/rest"
-	"lunch/pkg/http/slack"
 	"lunch/pkg/http/websocket"
 	"lunch/pkg/jwt"
 	"lunch/pkg/lunch"
@@ -35,12 +34,11 @@ func NewHandler(cfg *Configuration, roller *lunch.Roller, jwtService *jwt.Servic
 	}))
 	r.Use(auth.Parser(jwtService))
 
-	r.Use(middleware.RouteHeaders().Route("Upgrade", "websocket", middleware.New(websocket.Handler(roller))).Handler)
-
-	r.With(middleware.AllowContentType("application/json", "application/x-www-form-urlencoded")).
-		Post("/slack-lunch-bot", slack.NewHandler(cfg.Slack, roller).ServeHTTP)
-	r.Mount("/oauth", oauth.Handler(cfg.OAuth, jwtService))
-	r.Mount("/api", rest.Handler())
+	r.Route("/api", func(r chi.Router) {
+		r.Mount("/oauth", oauth.Handler(cfg.OAuth, jwtService))
+		r.Mount("/ws", websocket.Handler(roller))
+		r.Mount("/", rest.Handler())
+	})
 
 	return r
 }

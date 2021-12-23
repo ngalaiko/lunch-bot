@@ -1,0 +1,8 @@
+#!/usr/bin/with-contenv ash
+
+exec reproxy \
+    --assets.location="/frontend/dist" \
+    --assets.spa \
+    --static.rule="*,^/api/(.*),http://127.0.0.1:8000/api/$$1" \
+    --gzip \
+    --listen="0.0.0.0:80"

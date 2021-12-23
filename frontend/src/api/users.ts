@@ -9,7 +9,7 @@ export type User = {
 const store = writable<User | null>(null)
 
 const getMe = async (): Promise<void> => {
-  const user = await http.get('api/users/me')
+  const user = await http.get('users/me')
   store.set({
     id: user.id,
     name: user.name

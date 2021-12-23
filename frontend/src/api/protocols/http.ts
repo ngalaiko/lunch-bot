@@ -1,4 +1,6 @@
-const apiUri = 'https://localhost:8000/'
+const apiUri = import.meta.env.DEV
+  ? 'https://localhost:8000/api/'
+  : `${location.origin}/api/`
 
 const get = async (path: string): Promise<any> => {
   const response = await fetch(apiUri + path, {

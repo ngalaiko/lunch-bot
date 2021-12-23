@@ -30,5 +30,6 @@ $ mkdir -p .cert && mkcert -key-file ./.cert/key.pem -cert-file ./.cert/cert.pem
 $ SLACK_SIGNING_SECRET=<secret> \
     SLACK_CLIENT_SECRET=<secret> \
     SLACK_CLIENT_ID=<id> \
-    go run ./cmd/server
+    go run ./cmd/server \
+        --tls
 ```
