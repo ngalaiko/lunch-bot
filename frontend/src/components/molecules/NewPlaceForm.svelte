@@ -1,16 +1,13 @@
 <script lang="ts">
-  import { places } from '../api'
-  import { Button, Input } from '../components/atoms'
+  import { Button, Input } from '../atoms'
+  import { createEventDispatcher } from 'svelte'
+
+  const dispatch = createEventDispatcher()
 
   let name = ''
   const notEmpty = (value: string) => value.length > 0
-
   const onFormSubmit = () => {
-    if (notEmpty(name))
-      places
-        .create(name)
-        .then(() => (name = ''))
-        .catch(alert)
+    dispatch('submit', { name })
   }
 </script>
 

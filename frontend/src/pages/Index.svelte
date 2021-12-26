@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Places from '../lib/Places.svelte'
+  import { Places } from '../components'
   import LastRoll from '../lib/LastRoll.svelte'
   import AddPlace from '../lib/AddPlace.svelte'
 </script>

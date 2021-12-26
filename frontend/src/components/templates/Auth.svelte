@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { users } from '../api'
+  import { users } from '../../api'
   import { Login } from '../organisms'
 </script>
 

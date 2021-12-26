@@ -1,6 +1,6 @@
 <script lang="ts">
   import { rolls, places } from '../api'
-  import { Button } from '../atoms'
+  import { Button } from '../components/atoms'
 
   $: lastRoll = $rolls.shift()
   $: text = lastRoll
