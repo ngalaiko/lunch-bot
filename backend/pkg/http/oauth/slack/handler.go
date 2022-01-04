@@ -22,13 +22,13 @@ type Configuration struct {
 func (c *Configuration) Parse() error {
 	clientID := os.Getenv("SLACK_CLIENT_ID")
 	if clientID == "" {
-		return fmt.Errorf("SLACK_CLIENT_ID is not set")
+		log.Printf("[WARN] SLACK_CLIENT_ID is not set")
 	}
 	c.ClientID = clientID
 
 	clientSecret := os.Getenv("SLACK_CLIENT_SECRET")
 	if clientSecret == "" {
-		return fmt.Errorf("SLACK_CLIENT_SECRET is not set")
+		log.Printf("[WARN] SLACK_CLIENT_SECRET is not set")
 	}
 	c.ClientSecret = clientSecret
 

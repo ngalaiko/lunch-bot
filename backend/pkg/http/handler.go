@@ -6,6 +6,7 @@ import (
 	"lunch/pkg/http/auth"
 	"lunch/pkg/http/oauth"
 	"lunch/pkg/http/rest"
+	"lunch/pkg/http/slack"
 	"lunch/pkg/http/websocket"
 	"lunch/pkg/jwt"
 	"lunch/pkg/lunch"
@@ -33,6 +34,9 @@ func NewHandler(cfg *Configuration, roller *lunch.Roller, jwtService *jwt.Servic
 		MaxAge:           300,
 	}))
 	r.Use(auth.Parser(jwtService))
+
+	r.With(middleware.AllowContentType("application/json", "application/x-www-form-urlencoded")).
+		Post("/slack-lunch-bot", slack.NewHandler(cfg.Slack, roller).ServeHTTP)
 
 	r.Route("/api", func(r chi.Router) {
 		r.Mount("/oauth", oauth.Handler(cfg.OAuth, jwtService))

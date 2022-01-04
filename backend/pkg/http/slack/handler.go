@@ -23,7 +23,7 @@ type Configuration struct {
 func (c *Configuration) Parse() error {
 	signingSecret := os.Getenv("SLACK_SIGNING_SECRET")
 	if signingSecret == "" {
-		return fmt.Errorf("SLACK_SIGNING_SECRET is not set")
+		log.Printf("[WARN] SLACK_SIGNING_SECRET is not set")
 	}
 	c.SigningSecret = signingSecret
 

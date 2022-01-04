@@ -31,10 +31,10 @@ func mustLoadConfig() aws.Config {
 var (
 	awsConfig     = mustLoadConfig()
 	dynamodbStore = store.NewDynamoDB(awsConfig)
-	placesStore   = storage_places.NewDynamoDB(dynamodbStore, "Places")
-	boostsStore   = storage_boosts.NewDynamoDB(dynamodbStore, "Boosts")
-	rollsStore    = storage_rolls.NewDynamoDB(dynamodbStore, "Rolls")
-	jwtKeysStore  = storage_jwt_keys.NewMemory()
+	placesStore   = storage_places.NewDynamoDB(dynamodbStore, "lunch-production-webapp-places")
+	boostsStore   = storage_boosts.NewDynamoDB(dynamodbStore, "lunch-production-webapp-boosts")
+	rollsStore    = storage_rolls.NewDynamoDB(dynamodbStore, "lunch-production-webapp-rolls")
+	jwtKeysStore  = storage_jwt_keys.NewMemory() // TODO: use DynamoDB
 )
 
 var (
