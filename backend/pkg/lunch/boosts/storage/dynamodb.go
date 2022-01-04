@@ -24,7 +24,7 @@ func NewDynamoDB(storage *store.DynamoDB, tableName string) *DynamoDBStorage {
 
 func (dynamodb *DynamoDBStorage) Store(ctx context.Context, boost *boosts.Boost) error {
 	if err := dynamodb.storage.Execute(ctx, fmt.Sprintf(`
-		INSERT INTO %s
+		INSERT INTO "%s"
 			value {
 				'id': ?,
 				'user_id': ?,
@@ -39,7 +39,7 @@ func (dynamodb *DynamoDBStorage) Store(ctx context.Context, boost *boosts.Boost)
 
 func (dynamo *DynamoDBStorage) ListBoosts(ctx context.Context) ([]*boosts.Boost, error) {
 	bb := []*boosts.Boost{}
-	if err := dynamo.storage.Query(ctx, &bb, fmt.Sprintf(`SELECT * FROM %s`, dynamo.tableName)); err != nil {
+	if err := dynamo.storage.Query(ctx, &bb, fmt.Sprintf(`SELECT * FROM "%s"`, dynamo.tableName)); err != nil {
 		return nil, fmt.Errorf("failed to select: %w", err)
 	}
 	return bb, nil

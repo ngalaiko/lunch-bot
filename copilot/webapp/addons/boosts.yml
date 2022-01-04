@@ -52,6 +52,10 @@ Resources:
               - dynamodb:Delete*
               - dynamodb:Update*
               - dynamodb:PutItem
+              - dynamodb:PartiQLSelect
+              - dynamodb:PartiQLUpdate
+              - dynamodb:PartiQLInsert
+              - dynamodb:PartiQLDelete
             Resource: !Sub ${ boosts.Arn}
           - Sid: DDBLSIActions
             Action:

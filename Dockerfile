@@ -3,7 +3,7 @@ WORKDIR /src
 COPY backend/go.mod backend/go.sum /src/
 RUN go mod download
 COPY backend /src
-RUN GOOS=linux GOARCH=arm64 go build -o /usr/bin/backend /src/cmd/server
+RUN GOOS=linux GOARCH=arm64 go build -tags dynamodb -o /usr/bin/backend /src/cmd/server
 
 FROM node:17-alpine3.14 as frontend-builder
 WORKDIR /src

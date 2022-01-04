@@ -3,6 +3,7 @@ package migrate
 import (
 	"context"
 	"fmt"
+	"log"
 
 	storage_boosts "lunch/pkg/lunch/boosts/storage"
 	storage_places "lunch/pkg/lunch/places/storage"
@@ -24,11 +25,35 @@ func mustLoadConfig() aws.Config {
 var (
 	cfg           = mustLoadConfig()
 	dynamodbStore = store.NewDynamoDB(cfg)
-	placesStorage = storage_places.NewDynamoDB(dynamodbStore)
-	boostsStore   = storage_boosts.NewDynamoDB(dynamodbStore)
-	rollsStore    = storage_rolls.NewDynamoDB(dynamodbStore)
 )
 
 func Run(ctx context.Context) error {
-	return fmt.Errorf("nothing to do")
+	log.Printf("[INFO] migrating places")
+	if err := migratePlaces(
+		ctx,
+		storage_places.NewDynamoDB(dynamodbStore, "Places"),
+		storage_places.NewDynamoDB(dynamodbStore, "lunch-production-webapp-places"),
+	); err != nil {
+		return fmt.Errorf("failed to migrate places: %w", err)
+	}
+
+	log.Printf("[INFO] migrating boosts")
+	if err := migrateBoosts(
+		ctx,
+		storage_boosts.NewDynamoDB(dynamodbStore, "Boosts"),
+		storage_boosts.NewDynamoDB(dynamodbStore, "lunch-production-webapp-boosts"),
+	); err != nil {
+		return fmt.Errorf("failed to migrate boosts: %w", err)
+	}
+
+	log.Printf("[INFO] migrating rolls")
+	if err := migrateRolls(
+		ctx,
+		storage_rolls.NewDynamoDB(dynamodbStore, "Rolls"),
+		storage_rolls.NewDynamoDB(dynamodbStore, "lunch-production-webapp-rolls"),
+	); err != nil {
+		return fmt.Errorf("failed to migrate boosts: %w", err)
+	}
+
+	return nil
 }
