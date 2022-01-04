@@ -11,25 +11,27 @@ import (
 var _ Storage = &DynamoDBStorage{}
 
 type DynamoDBStorage struct {
-	storage *store.DynamoDB
+	storage   *store.DynamoDB
+	tableName string
 }
 
-func NewDynamoDB(storage *store.DynamoDB) *DynamoDBStorage {
+func NewDynamoDB(storage *store.DynamoDB, tableName string) *DynamoDBStorage {
 	return &DynamoDBStorage{
-		storage: storage,
+		storage:   storage,
+		tableName: tableName,
 	}
 }
 
 func (s *DynamoDBStorage) Store(ctx context.Context, place *places.Place) error {
-	if err := s.storage.Execute(ctx, `
-		INSERT INTO Places 
+	if err := s.storage.Execute(ctx, fmt.Sprintf(`
+		INSERT INTO %s 
 			value {
 				'id': ?,
 				'name': ?,
 				'added_at': ?,
 				'added_by': ?
 			}
-	`, place.ID, place.Name, place.AddedAt.Unix(), place.AddedBy); err != nil {
+	`, s.tableName), place.ID, place.Name, place.AddedAt.Unix(), place.AddedBy); err != nil {
 		return fmt.Errorf("failed to insert: %w", err)
 	}
 	return nil
@@ -37,7 +39,7 @@ func (s *DynamoDBStorage) Store(ctx context.Context, place *places.Place) error 
 
 func (s *DynamoDBStorage) GetByID(ctx context.Context, id places.ID) (*places.Place, error) {
 	places := []*places.Place{}
-	if err := s.storage.Query(ctx, &places, `SELECT * FROM Places WHERE id = ?`, id); err != nil {
+	if err := s.storage.Query(ctx, &places, fmt.Sprintf(`SELECT * FROM %s WHERE id = ?`, s.tableName), id); err != nil {
 		return nil, fmt.Errorf("failed to select: %w", err)
 	}
 	return places[0], nil
@@ -45,7 +47,7 @@ func (s *DynamoDBStorage) GetByID(ctx context.Context, id places.ID) (*places.Pl
 
 func (s *DynamoDBStorage) ListAll(ctx context.Context) ([]*places.Place, error) {
 	pp := []*places.Place{}
-	if err := s.storage.Query(ctx, &pp, `SELECT * FROM Places`); err != nil {
+	if err := s.storage.Query(ctx, &pp, fmt.Sprintf(`SELECT * FROM %s`, s.tableName)); err != nil {
 		return nil, fmt.Errorf("failed to select: %w", err)
 	}
 	return pp, nil

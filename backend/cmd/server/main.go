@@ -13,23 +13,13 @@ import (
 
 	"lunch/pkg/http"
 	"lunch/pkg/jwt"
-	storage_jwt_keys "lunch/pkg/jwt/keys/storage"
 	"lunch/pkg/lunch"
-	storage_boosts "lunch/pkg/lunch/boosts/storage"
 	"lunch/pkg/lunch/places"
-	storage_places "lunch/pkg/lunch/places/storage"
-	storage_rolls "lunch/pkg/lunch/rolls/storage"
-	"lunch/pkg/store"
 )
 
 var (
-	placesStore = storage_places.NewMemory()
-	boostsStore = storage_boosts.NewMemory()
-	rollsStore  = storage_rolls.NewMemory()
-)
-
-var (
-	roller = lunch.New(placesStore, boostsStore, rollsStore)
+	roller     = lunch.New(placesStore, boostsStore, rollsStore)
+	jwtService = jwt.NewService(jwtKeysStore)
 )
 
 func init() {
@@ -57,12 +47,6 @@ func main() {
 	if err := cfg.Parse(); err != nil {
 		log.Fatalf("failed to parse configuration: %v", err)
 	}
-
-	boltStore, err := store.NewBolt("db.dev.bolt")
-	if err != nil {
-		log.Fatalf("failed to create bolt store: %v", err)
-	}
-	jwtService := jwt.NewService(storage_jwt_keys.NewBolt(boltStore))
 
 	srv := http.NewServer(cfg, roller, jwtService)
 

@@ -1,0 +1,27 @@
+# The manifest for the "webapp" service.
+# Read the full specification for the "Load Balanced Web Service" type at:
+#  https://aws.github.io/copilot-cli/docs/manifest/lb-web-service/
+
+name: webapp
+type: Load Balanced Web Service
+
+http:
+  path: '/'
+  alias: lunch.forfunc.com
+
+image:
+  build: Dockerfile
+  port: 80
+
+cpu: 256
+memory: 512
+platform: linux/arm64
+count: 1
+exec: true
+
+variables:
+  SLACK_SIGNING_SECRET: test
+  SLACK_CLIENT_ID: 1693172761239.2533308174103
+
+secrets:
+  SLACK_CLIENT_SECRET: /copilot/${COPILOT_APPLICATION_NAME}/${COPILOT_ENVIRONMENT_NAME}/secrets/SLACK_CLIENT_SECRET
