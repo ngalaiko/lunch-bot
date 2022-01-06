@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store'
-import {websocket} from './protocols'
+import { websocket } from './protocols'
 import type { Place } from './places'
 
 export type Roll = {
@@ -28,7 +28,12 @@ const storeResponse = (response: any) => {
         }
       })
       .forEach((roll: Roll) =>
-        store.update(rolls => rolls.filter(r => r.id !== roll.id).concat(roll))
+        store.update(rolls =>
+          rolls
+            .filter(r => r.id !== roll.id)
+            .concat(roll)
+            .sort((a, b) => b.time.getTime() - a.time.getTime())
+        )
       )
 }
 

@@ -4,11 +4,9 @@
 
   const dispatch = createEventDispatcher()
 
-  let name = ''
+  export let name = ''
   const notEmpty = (value: string) => value.length > 0
-  const onFormSubmit = () => {
-    dispatch('submit', { name })
-  }
+  const onFormSubmit = () => dispatch('submit', { name })
 </script>
 
 <form on:submit|preventDefault={onFormSubmit}>

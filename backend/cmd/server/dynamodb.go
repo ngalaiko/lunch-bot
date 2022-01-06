@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"log"
-	"os"
 
 	storage_jwt_keys "lunch/pkg/jwt/keys/storage"
 	storage_boosts "lunch/pkg/lunch/boosts/storage"
@@ -32,8 +31,8 @@ func mustLoadConfig() aws.Config {
 var (
 	awsConfig     = mustLoadConfig()
 	dynamodbStore = store.NewDynamoDB(awsConfig)
-	placesStore   = storage_places.NewDynamoDB(dynamodbStore, os.Getenv("PLACES_NAME"))
-	boostsStore   = storage_boosts.NewDynamoDB(dynamodbStore, os.Getenv("BOOSTS_NAME"))
-	rollsStore    = storage_rolls.NewDynamoDB(dynamodbStore, os.Getenv("ROLLS_NAME"))
+	placesStore   = storage_places.NewDynamoDB(dynamodbStore, "lunch-production-webapp-places")
+	boostsStore   = storage_boosts.NewDynamoDB(dynamodbStore, "lunch-production-webapp-boosts")
+	rollsStore    = storage_rolls.NewDynamoDB(dynamodbStore, "lunch-production-webapp-rolls")
 	jwtKeysStore  = storage_jwt_keys.NewMemory() // TODO: use DynamoDB
 )

@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -14,23 +13,12 @@ import (
 	"lunch/pkg/http"
 	"lunch/pkg/jwt"
 	"lunch/pkg/lunch"
-	"lunch/pkg/lunch/places"
 )
 
 var (
 	roller     = lunch.New(placesStore, boostsStore, rollsStore)
 	jwtService = jwt.NewService(jwtKeysStore)
 )
-
-func init() {
-	for i := 0; i < 10; i++ {
-		placesStore.Store(context.Background(), &places.Place{
-			ID:      places.ID(fmt.Sprint(i)),
-			Name:    places.Name(fmt.Sprintf("Place %d", i)),
-			AddedAt: time.Now().Add(-1 * time.Duration(i) * time.Hour),
-		})
-	}
-}
 
 var (
 	addr = flag.String("addr", ":8000", "http listen address")

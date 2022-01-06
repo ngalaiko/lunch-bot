@@ -136,7 +136,7 @@ func (h *handler) handleRollsList(ctx context.Context, req *request) (*response,
 	}
 
 	pp, err := h.roller.ListPlaces(ctx, time.Now())
-	if err != nil {
+	if err != nil && !errors.Is(err, lunch.ErrNoPlaces) {
 		return nil, fmt.Errorf("failed to list places: %s", err)
 	}
 
