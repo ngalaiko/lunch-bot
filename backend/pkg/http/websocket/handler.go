@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"lunch/pkg/lunch"
@@ -18,16 +19,38 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
+	"github.com/google/uuid"
 )
 
 type handler struct {
 	roller *lunch.Roller
+
+	openConnections      map[string]io.ReadWriter
+	openConnectionsGuard *sync.RWMutex
 }
 
 func Handler(roller *lunch.Roller) http.Handler {
 	r := chi.NewMux()
-	r.Get("/", (&handler{roller: roller}).ServeHTTP)
+	r.Get("/", (&handler{
+		roller:               roller,
+		openConnections:      map[string]io.ReadWriter{},
+		openConnectionsGuard: &sync.RWMutex{},
+	}).ServeHTTP)
 	return r
+}
+
+func (h *handler) registerConnection(conn io.ReadWriter) func() {
+	id := uuid.NewString()
+
+	h.openConnectionsGuard.Lock()
+	h.openConnections[id] = conn
+	h.openConnectionsGuard.Unlock()
+
+	return func() {
+		h.openConnectionsGuard.Lock()
+		delete(h.openConnections, id)
+		h.openConnectionsGuard.Unlock()
+	}
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -40,11 +63,15 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	defer h.registerConnection(conn)()
 	defer conn.Close()
 
 	for {
 		msg, op, err := wsutil.ReadClientData(conn)
 		if err != nil {
+			if _, isClosedErr := err.(wsutil.ClosedError); isClosedErr {
+				return
+			}
 			log.Printf("[ERROR] failed to read websocket message: %s", err)
 			return
 		}
@@ -60,7 +87,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		resp, err := h.handle(r.Context(), req)
+		resp, broadcast, err := h.handle(r.Context(), req)
 		if err != nil {
 			log.Printf("[ERROR] failed to handle websocket message: %s", err)
 
@@ -71,14 +98,21 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := writeResponse(conn, op, resp); err != nil {
-			log.Printf("[ERROR] failed to write message: %s", err)
-			return
+		if broadcast {
+			if err := h.broadcast(op, resp); err != nil {
+				log.Printf("[ERROR] failed to broadcast message: %s", err)
+				return
+			}
+		} else {
+			if err := writeResponse(conn, op, resp); err != nil {
+				log.Printf("[ERROR] failed to write message: %s", err)
+				return
+			}
 		}
 	}
 }
 
-func (h *handler) handle(ctx context.Context, req *request) (*response, error) {
+func (h *handler) handle(ctx context.Context, req *request) (*response, bool, error) {
 	switch req.Method {
 	case methodPlacesList:
 		return h.handlePlacesList(ctx, req)
@@ -93,51 +127,51 @@ func (h *handler) handle(ctx context.Context, req *request) (*response, error) {
 	case methodRollsList:
 		return h.handleRollsList(ctx, req)
 	default:
-		return &response{ID: req.ID, Error: fmt.Sprintf("unknown method '%s'", req.Method)}, nil
+		return &response{ID: req.ID, Error: fmt.Sprintf("unknown method '%s'", req.Method)}, false, nil
 	}
 }
 
-func (h *handler) handlePlacesCreate(ctx context.Context, req *request) (*response, error) {
+func (h *handler) handlePlacesCreate(ctx context.Context, req *request) (*response, bool, error) {
 	name, ok := req.Params["name"]
 	if !ok {
-		return &response{ID: req.ID, Error: "'name' parameter must be set"}, nil
+		return &response{ID: req.ID, Error: "'name' parameter must be set"}, false, nil
 	}
 	if _, err := h.roller.NewPlace(ctx, name); err != nil {
-		return nil, fmt.Errorf("failed to create place: %s", err)
+		return nil, false, fmt.Errorf("failed to create place: %s", err)
 	}
 	places, err := h.roller.ListPlaces(ctx, time.Now())
 	if err != nil {
-		return nil, fmt.Errorf("failed to list chances: %s", err)
+		return nil, false, fmt.Errorf("failed to list chances: %s", err)
 	}
-	return &response{ID: req.ID, Places: places}, nil
+	return &response{ID: req.ID, Places: places}, true, nil
 }
 
-func (h *handler) handleBoostsCreate(ctx context.Context, req *request) (*response, error) {
+func (h *handler) handleBoostsCreate(ctx context.Context, req *request) (*response, bool, error) {
 	placeID, ok := req.Params["placeId"]
 	if !ok {
-		return &response{ID: req.ID, Error: "'placeId' parameter must be set"}, nil
+		return &response{ID: req.ID, Error: "'placeId' parameter must be set"}, false, nil
 	}
 
 	boost, err := h.roller.Boost(ctx, places.ID(placeID), time.Now())
 	switch {
 	case err == nil:
-		return &response{ID: req.ID, Boosts: []*boosts.Boost{boost}}, nil
+		return &response{ID: req.ID, Boosts: []*boosts.Boost{boost}}, true, nil
 	case errors.Is(err, lunch.ErrNoPoints):
-		return &response{ID: req.ID, Error: "no points left"}, nil
+		return &response{ID: req.ID, Error: "no points left"}, false, nil
 	default:
-		return nil, fmt.Errorf("failed to boost: %s", err)
+		return nil, false, fmt.Errorf("failed to boost: %s", err)
 	}
 }
 
-func (h *handler) handleRollsList(ctx context.Context, req *request) (*response, error) {
+func (h *handler) handleRollsList(ctx context.Context, req *request) (*response, bool, error) {
 	rr, err := h.roller.ListRolls(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list rolls: %s", err)
+		return nil, false, fmt.Errorf("failed to list rolls: %s", err)
 	}
 
 	pp, err := h.roller.ListPlaces(ctx, time.Now())
 	if err != nil && !errors.Is(err, lunch.ErrNoPlaces) {
-		return nil, fmt.Errorf("failed to list places: %s", err)
+		return nil, false, fmt.Errorf("failed to list places: %s", err)
 	}
 
 	placesByID := make(map[places.ID]*lunch.Place, len(pp))
@@ -153,28 +187,28 @@ func (h *handler) handleRollsList(ctx context.Context, req *request) (*response,
 		})
 	}
 
-	return &response{ID: req.ID, Rolls: rolls}, nil
+	return &response{ID: req.ID, Rolls: rolls}, true, nil
 }
 
-func (h *handler) handlePlacesList(ctx context.Context, req *request) (*response, error) {
+func (h *handler) handlePlacesList(ctx context.Context, req *request) (*response, bool, error) {
 	pp, err := h.roller.ListPlaces(ctx, time.Now())
 	switch {
 	case err == nil:
-		return &response{ID: req.ID, Places: pp}, nil
+		return &response{ID: req.ID, Places: pp}, false, nil
 	case errors.Is(err, lunch.ErrNoPlaces):
-		return &response{ID: req.ID}, nil
+		return &response{ID: req.ID}, false, nil
 	default:
-		return nil, fmt.Errorf("failed to list chances: %s", err)
+		return nil, false, fmt.Errorf("failed to list chances: %s", err)
 	}
 }
 
-func (h *handler) handleRollsCreate(ctx context.Context, req *request) (*response, error) {
+func (h *handler) handleRollsCreate(ctx context.Context, req *request) (*response, bool, error) {
 	roll, _, err := h.roller.Roll(ctx, time.Now())
 	switch {
 	case err == nil:
 		pp, err := h.roller.ListPlaces(ctx, time.Now())
 		if err != nil {
-			return nil, fmt.Errorf("failed to list chances: %s", err)
+			return nil, false, fmt.Errorf("failed to list chances: %s", err)
 		}
 		placesByID := make(map[places.ID]*lunch.Place)
 		for _, place := range pp {
@@ -185,12 +219,24 @@ func (h *handler) handleRollsCreate(ctx context.Context, req *request) (*respons
 				Roll:  roll,
 				Place: placesByID[roll.PlaceID],
 			},
-		}}, nil
+		}}, true, nil
 	case errors.Is(err, lunch.ErrNoPoints):
-		return &response{ID: req.ID, Error: "no points left"}, nil
+		return &response{ID: req.ID, Error: "no points left"}, false, nil
 	default:
-		return nil, fmt.Errorf("failed to roll: %s", err)
+		return nil, false, fmt.Errorf("failed to roll: %s", err)
 	}
+}
+
+func (h *handler) broadcast(op ws.OpCode, resp *response) error {
+	h.openConnectionsGuard.RLock()
+	defer h.openConnectionsGuard.RUnlock()
+
+	for _, conn := range h.openConnections {
+		if err := writeResponse(conn, op, resp); err != nil {
+			log.Printf("[ERROR] failed to write message: %s", err)
+		}
+	}
+	return nil
 }
 
 func writeResponse(w io.Writer, op ws.OpCode, resp *response) error {

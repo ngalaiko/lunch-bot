@@ -51,6 +51,8 @@ const create = async (): Promise<void> => {
   storeResponse(response)
 }
 
+websocket.onMessage(storeResponse)
+
 export default {
   create,
   list,

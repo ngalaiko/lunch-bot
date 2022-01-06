@@ -36,6 +36,8 @@ const create = async (placeId: string): Promise<void> => {
   storeResponse(response)
 }
 
+websocket.onMessage(storeResponse)
+
 export default {
   create,
   subscribe: store.subscribe

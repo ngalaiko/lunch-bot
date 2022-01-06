@@ -19,5 +19,7 @@ const wsp = new WebSocketAsPromised(websocketUri, {
 
 export default {
   open: (): Promise<Event> => wsp.open(),
-  request: (request: any): Promise<any> => wsp.sendRequest(request)
+  request: (request: any): Promise<any> => wsp.sendRequest(request),
+  onMessage: (listener: (...args: any[]) => any): void =>
+    wsp.onUnpackedMessage.addListener(listener)
 }

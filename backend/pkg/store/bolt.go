@@ -14,6 +14,14 @@ type Bolt struct {
 	db *bolt.DB
 }
 
+func MustNewBolt(filepath string) *Bolt {
+	b, err := NewBolt(filepath)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
 func NewBolt(filepath string) (*Bolt, error) {
 	db, err := bolt.Open(filepath, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
