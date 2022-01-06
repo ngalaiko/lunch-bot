@@ -22,7 +22,13 @@ const storeResponse = (response: any) => {
         }
       })
       .forEach((place: Place) =>
-        store.update(places => places.filter(p => p.id !== place.id).concat(place))
+        store.update(places =>
+          places
+            .filter(p => p.id !== place.id)
+            .sort((a, b) => b.addedAt.getTime() - a.addedAt.getTime())
+            .sort((a, b) => b.chance - a.chance)
+            .concat(place)
+        )
       )
 }
 

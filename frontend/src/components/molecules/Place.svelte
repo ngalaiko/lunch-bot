@@ -7,11 +7,16 @@
 
   const dispatch = createEventDispatcher()
   const onButtonClick = () => dispatch('boost', place)
+
+  const humanChance = (chance: number) => {
+    chance = chance * 100
+    return `${chance.toFixed(2)}%`
+  }
 </script>
 
-<div class="flex">
+<span class="flex items-center justify-between">
   <p>
-    {place.name} - {place.chance * 100}%
+    {place.name}: {humanChance(place.chance)}
   </p>
   <Button size="sm" on:click={onButtonClick}>Boost</Button>
-</div>
+</span>

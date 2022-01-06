@@ -4,14 +4,14 @@
 
   const padding = {
     sm: 'px-2.5 py-1.5',
-    md: 'px-4 py-2',
+    md: 'px-3 py-1.5',
     lg: 'px-6 py-3'
   }
 
   const text = {
-    sm: 'text-xs',
+    sm: 'text-sm',
     md: 'text-base',
-    lg: 'text-lg'
+    lg: 'text-2xl'
   }
 
   const css = `${padding[size]} ${text[size]}`

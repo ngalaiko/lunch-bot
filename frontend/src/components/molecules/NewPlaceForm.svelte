@@ -9,9 +9,9 @@
   const onFormSubmit = () => dispatch('submit', { name })
 </script>
 
-<form on:submit|preventDefault={onFormSubmit}>
-  <Input name="name" placeholder="Weidao" bind:value={name} valid={notEmpty} />
-  <Button on:click={onFormSubmit}>Add</Button>
+<form on:submit|preventDefault={onFormSubmit} class="flex">
+  <Input name="name" placeholder="Something new?" bind:value={name} valid={notEmpty} />
+  <Button size="sm" on:click={onFormSubmit}>Add</Button>
 
   <input type="submit" class="hidden" />
 </form>

@@ -18,15 +18,17 @@
   }
 </script>
 
-{#await places.list()}
-  <p>Loading...</p>
-{:then}
-  <ul>
-    {#each $places as place}
-      <li><Place on:boost={handleOnBoost} {place} /></li>
-    {/each}
-    <li><NewPlaceForm on:submit={handleOnSubmit} bind:name={newPlaceName} /></li>
-  </ul>
-{:catch e}
-  <p>Error: {e.message}</p>
-{/await}
+<div class="flex flex-col items-center">
+  {#await places.list()}
+    <p>Loading...</p>
+  {:then}
+    <ul class="flex flex-col items-stretch space-y-2">
+      <li><NewPlaceForm on:submit={handleOnSubmit} bind:name={newPlaceName} /></li>
+      {#each $places as place}
+        <li><Place on:boost={handleOnBoost} {place} /></li>
+      {/each}
+    </ul>
+  {:catch e}
+    <p>Error: {e.message}</p>
+  {/await}
+</div>

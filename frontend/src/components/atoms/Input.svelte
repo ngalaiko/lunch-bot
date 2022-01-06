@@ -16,10 +16,8 @@
   bind:value
   id={name}
   class={`${
-    isValid
-      ? ''
-      : 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500'
-  } shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md`}
+    isValid ? '' : 'text-red-900 placeholder-red-300'
+  } m-0 p-0 border-0 focus:shadow-transparent block w-full sm:text-sm rounded-md`}
   {placeholder}
   on:input={validate}
   on:paste={validate}

@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { Places } from '../components'
-  import LastRoll from '../lib/LastRoll.svelte'
+  import { Places, LastRoll } from '../components'
 </script>
 
 <main>
-  <LastRoll />
+  <div class="m-10">
+    <LastRoll />
+  </div>
   <Places />
 </main>
