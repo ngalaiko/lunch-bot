@@ -17,9 +17,9 @@ func init() {
 }
 
 var (
-	placesStore  = storage_places.NewMemory()
-	boostsStore  = storage_boosts.NewMemory()
-	rollsStore   = storage_rolls.NewMemory()
 	boltStore    = store.MustNewBolt("bolt.db")
+	placesStore  = storage_places.NewBolt(boltStore)
+	boostsStore  = storage_boosts.NewBolt(boltStore)
+	rollsStore   = storage_rolls.NewBolt(boltStore)
 	jwtKeysStore = storage_jwt_keys.NewBolt(boltStore)
 )
