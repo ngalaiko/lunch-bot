@@ -34,5 +34,5 @@ var (
 	placesStore   = storage_places.NewDynamoDB(dynamodbStore, "lunch-production-webapp-places")
 	boostsStore   = storage_boosts.NewDynamoDB(dynamodbStore, "lunch-production-webapp-boosts")
 	rollsStore    = storage_rolls.NewDynamoDB(dynamodbStore, "lunch-production-webapp-rolls")
-	jwtKeysStore  = storage_jwt_keys.NewMemory() // TODO: use DynamoDB
+	jwtKeysStore  = storage_jwt_keys.NewDynamoDB(dynamodbStore, "lunch-production-webapp-private-keys")
 )

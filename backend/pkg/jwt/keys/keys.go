@@ -13,8 +13,8 @@ var (
 
 // Key is a public key.
 type Key struct {
-	ID        string
-	PublicDER []byte
+	ID        string `dynamodbav:"id" json:"id"`
+	PublicDER []byte `dynamodbav:"public_der" json:"public_der"`
 }
 
 // New creates a new key with a public der payload.
