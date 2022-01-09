@@ -155,7 +155,11 @@ func (h *handler) handleBoostsCreate(ctx context.Context, req *request) (*respon
 	boost, err := h.roller.Boost(ctx, places.ID(placeID), time.Now())
 	switch {
 	case err == nil:
-		return &response{ID: req.ID, Boosts: []*boosts.Boost{boost}}, true, nil
+		places, err := h.roller.ListPlaces(ctx, time.Now())
+		if err != nil && !errors.Is(err, lunch.ErrNoPlaces) {
+			return nil, false, fmt.Errorf("failed to list places: %s", err)
+		}
+		return &response{ID: req.ID, Boosts: []*boosts.Boost{boost}, Places: places}, true, nil
 	case errors.Is(err, lunch.ErrNoPoints):
 		return &response{ID: req.ID, Error: "no points left"}, false, nil
 	default:

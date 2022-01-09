@@ -28,7 +28,7 @@
 
   $: lastRoll = $rolls.shift()
 
-  const onRoll = () => rolls.create().then(places.list).catch(alert)
+  const onRoll = () => rolls.create().catch(alert)
 </script>
 
 <div class="flex flex-col items-center">
