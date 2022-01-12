@@ -10,6 +10,8 @@ import (
 )
 
 func migrateRolls(ctx context.Context, from, to storage_rolls.Storage) error {
+	log.Printf("[INFO] migrating rolls")
+
 	toMigrate, err := from.ListRolls(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list names to migrate: %w", err)

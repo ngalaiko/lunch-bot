@@ -10,6 +10,8 @@ import (
 )
 
 func migrateBoosts(ctx context.Context, from, to storage_boosts.Storage) error {
+	log.Printf("[INFO] migrating boosts")
+
 	toMigrate, err := from.ListBoosts(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list names to migrate: %w", err)

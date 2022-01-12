@@ -10,6 +10,8 @@ import (
 )
 
 func migratePlaces(ctx context.Context, from, to storage_places.Storage) error {
+	log.Printf("[INFO] migrating places")
+
 	toMigrate, err := from.ListAll(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list names to migrate: %w", err)

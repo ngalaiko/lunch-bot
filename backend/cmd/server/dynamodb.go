@@ -43,4 +43,5 @@ var (
 	jwtKeysStore = storage_jwt_keys.NewCache(
 		storage_jwt_keys.NewDynamoDB(dynamodbStore, "lunch-production-webapp-private-keys"),
 	)
+	// lunch-production-webapp-users
 )

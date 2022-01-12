@@ -3,7 +3,6 @@ package migrate
 import (
 	"context"
 	"fmt"
-	"log"
 
 	storage_boosts "lunch/pkg/lunch/boosts/storage"
 	storage_places "lunch/pkg/lunch/places/storage"
@@ -28,7 +27,10 @@ var (
 )
 
 func Run(ctx context.Context) error {
-	log.Printf("[INFO] migrating places")
+	if err := migrateUsers(ctx, storage_places.NewDynamoDB(dynamodbStore, "lunch-production-webapp-places")); err != nil {
+		return fmt.Errorf("failed to migrate users: %w", err)
+	}
+
 	if err := migratePlaces(
 		ctx,
 		storage_places.NewDynamoDB(dynamodbStore, "Places"),
@@ -37,7 +39,6 @@ func Run(ctx context.Context) error {
 		return fmt.Errorf("failed to migrate places: %w", err)
 	}
 
-	log.Printf("[INFO] migrating boosts")
 	if err := migrateBoosts(
 		ctx,
 		storage_boosts.NewDynamoDB(dynamodbStore, "Boosts"),
@@ -46,7 +47,6 @@ func Run(ctx context.Context) error {
 		return fmt.Errorf("failed to migrate boosts: %w", err)
 	}
 
-	log.Printf("[INFO] migrating rolls")
 	if err := migrateRolls(
 		ctx,
 		storage_rolls.NewDynamoDB(dynamodbStore, "Rolls"),
