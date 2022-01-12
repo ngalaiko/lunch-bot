@@ -6,6 +6,7 @@ import (
 
 	"lunch/pkg/http/oauth/slack"
 	"lunch/pkg/jwt"
+	service_users "lunch/pkg/users/service"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -23,9 +24,9 @@ func (c *Configuration) Parse() error {
 	return nil
 }
 
-func Handler(cfg *Configuration, jwtService *jwt.Service) http.HandlerFunc {
+func Handler(cfg *Configuration, jwtService *jwt.Service, usersService *service_users.Service) http.HandlerFunc {
 	r := chi.NewRouter()
 	applicationJSON := middleware.AllowContentType("application/json")
-	r.With(applicationJSON).Post("/slack", slack.Handler(cfg.Slack, jwtService))
+	r.With(applicationJSON).Post("/slack", slack.Handler(cfg.Slack, jwtService, usersService))
 	return r.ServeHTTP
 }

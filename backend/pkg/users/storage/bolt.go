@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"lunch/pkg/store"
@@ -28,7 +29,9 @@ func (s *bolt) Create(ctx context.Context, user *users.User) error {
 
 func (s *bolt) Get(ctx context.Context, id string) (*users.User, error) {
 	var user *users.User
-	if err := s.db.Get(ctx, s.bucketName, id, &user); err != nil {
+	if err := s.db.Get(ctx, s.bucketName, id, &user); errors.Is(err, store.ErrNotFound) {
+		return nil, ErrNotFound
+	} else if err != nil {
 		return nil, fmt.Errorf("failed to get user by id: %w", err)
 	}
 	return user, nil

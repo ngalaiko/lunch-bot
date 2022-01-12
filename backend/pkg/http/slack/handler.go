@@ -14,6 +14,7 @@ import (
 	"lunch/pkg/lunch"
 	"lunch/pkg/lunch/places"
 	"lunch/pkg/users"
+	service_users "lunch/pkg/users/service"
 )
 
 type Configuration struct {
@@ -31,16 +32,18 @@ func (c *Configuration) Parse() error {
 }
 
 type Handler struct {
-	cfg    *Configuration
-	roller *lunch.Roller
-	client *http.Client
+	cfg          *Configuration
+	roller       *lunch.Roller
+	client       *http.Client
+	usersService *service_users.Service
 }
 
-func NewHandler(cfg *Configuration, roller *lunch.Roller) *Handler {
+func NewHandler(cfg *Configuration, roller *lunch.Roller, usersService *service_users.Service) *Handler {
 	return &Handler{
-		cfg:    cfg,
-		roller: roller,
-		client: &http.Client{},
+		cfg:          cfg,
+		roller:       roller,
+		client:       &http.Client{},
+		usersService: usersService,
 	}
 }
 
@@ -55,7 +58,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case actions != nil:
 		log.Printf("[INFO] incoming actions: %+v", actions)
-		ctx := users.NewContext(r.Context(), &users.User{ID: actions.User.ID, Name: actions.User.Name})
+
+		user := &users.User{ID: actions.User.ID, Name: actions.User.Name}
+		if err := h.usersService.Create(r.Context(), user); err != nil {
+			log.Printf("[ERROR] failed to create user: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		ctx := users.NewContext(r.Context(), user)
 		response := h.handleActions(ctx, actions.ResponseUrl, actions.Actions...)
 		if err := respondJSON(w, response); err != nil {
 			log.Printf("[ERROR] failed to marshal response: %s", err)
@@ -64,7 +75,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	case command != nil:
 		log.Printf("[INFO] incoming command: %+v", command)
-		ctx := users.NewContext(r.Context(), &users.User{ID: command.UserID, Name: command.UserName})
+		user := &users.User{ID: command.UserID, Name: command.UserName}
+		if err := h.usersService.Create(r.Context(), user); err != nil {
+			log.Printf("[ERROR] failed to create user: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		ctx := users.NewContext(r.Context(), user)
 		response := h.handleCommand(ctx, command)
 		if err := respondJSON(w, response); err != nil {
 			log.Printf("[ERROR] failed to marshal response: %s", err)

@@ -12,6 +12,7 @@ import (
 	"lunch/pkg/http/auth"
 	"lunch/pkg/jwt"
 	"lunch/pkg/users"
+	service_users "lunch/pkg/users/service"
 )
 
 type Configuration struct {
@@ -35,7 +36,7 @@ func (c *Configuration) Parse() error {
 	return nil
 }
 
-func Handler(cfg *Configuration, jwtService *jwt.Service) http.HandlerFunc {
+func Handler(cfg *Configuration, jwtService *jwt.Service, usersService *service_users.Service) http.HandlerFunc {
 	type request struct {
 		Code        string `json:"code"`
 		RedirectURI string `json:"redirectUri"`
@@ -133,10 +134,18 @@ func Handler(cfg *Configuration, jwtService *jwt.Service) http.HandlerFunc {
 			return
 		}
 
-		token, err := jwtService.NewToken(r.Context(), &users.User{
+		user := &users.User{
 			ID:   identityResponseBody.User.ID,
 			Name: identityResponseBody.User.Name,
-		})
+		}
+
+		if err := usersService.Create(r.Context(), user); err != nil {
+			log.Printf("[ERROR] failed to create user: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		token, err := jwtService.NewToken(r.Context(), user)
 		if err != nil {
 			log.Printf("[ERROR] failed to generate token: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)

@@ -36,6 +36,9 @@ func (d *dynamoDB) Get(ctx context.Context, id string) (*users.User, error) {
 	if err := d.storage.Query(ctx, &users, fmt.Sprintf(`SELECT * FROM "%s" WHERE id = ?`, d.tableName), id); err != nil {
 		return nil, fmt.Errorf("failed to select: %w", err)
 	}
+	if len(users) == 0 {
+		return nil, ErrNotFound
+	}
 	return users[0], nil
 }
 

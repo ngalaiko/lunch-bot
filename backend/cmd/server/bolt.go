@@ -1,3 +1,4 @@
+//go:build !dynamodb
 // +build !dynamodb
 
 package main
@@ -10,6 +11,7 @@ import (
 	storage_places "lunch/pkg/lunch/places/storage"
 	storage_rolls "lunch/pkg/lunch/rolls/storage"
 	"lunch/pkg/store"
+	storage_users "lunch/pkg/users/storage"
 )
 
 func init() {
@@ -29,5 +31,8 @@ var (
 	)
 	jwtKeysStore = storage_jwt_keys.NewCache(
 		storage_jwt_keys.NewBolt(boltStore),
+	)
+	usersStore = storage_users.NewCache(
+		storage_users.NewBolt(boltStore),
 	)
 )

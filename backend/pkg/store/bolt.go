@@ -59,11 +59,11 @@ func (b *Bolt) Get(ctx context.Context, bucket, key string, dest interface{}) er
 	return b.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
 		if b == nil {
-			return bolt.ErrBucketNotFound
+			return ErrNotFound
 		}
 		data := b.Get([]byte(key))
 		if data == nil {
-			return fmt.Errorf("key not found")
+			return ErrNotFound
 		}
 		if err := json.Unmarshal(data, dest); err != nil {
 			return fmt.Errorf("failed to unmarshal value: %v", err)

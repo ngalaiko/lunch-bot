@@ -1,3 +1,4 @@
+//go:build dynamodb
 // +build dynamodb
 
 package main
@@ -11,6 +12,7 @@ import (
 	storage_places "lunch/pkg/lunch/places/storage"
 	storage_rolls "lunch/pkg/lunch/rolls/storage"
 	"lunch/pkg/store"
+	storage_users "lunch/pkg/users/storage"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -43,5 +45,7 @@ var (
 	jwtKeysStore = storage_jwt_keys.NewCache(
 		storage_jwt_keys.NewDynamoDB(dynamodbStore, "lunch-production-webapp-private-keys"),
 	)
-	// lunch-production-webapp-users
+	usersStore = storage_users.NewCache(
+		storage_users.NewDynamoDB(dynamodbStore, "lunch-production-webapp-users"),
+	)
 )
