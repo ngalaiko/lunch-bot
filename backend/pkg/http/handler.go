@@ -45,6 +45,9 @@ func NewHandler(
 		Post("/slack-lunch-bot", slack.NewHandler(cfg.Slack, roller, usersService).ServeHTTP)
 
 	r.Route("/api", func(r chi.Router) {
+		r.With(middleware.AllowContentType("application/json", "application/x-www-form-urlencoded")).
+			Post("/webhooks/slack", slack.NewHandler(cfg.Slack, roller, usersService).ServeHTTP)
+
 		r.Mount("/oauth", oauth.Handler(cfg.OAuth, jwtService, usersService))
 		r.Mount("/ws", websocket.Handler(roller))
 		r.Mount("/", rest.Handler())

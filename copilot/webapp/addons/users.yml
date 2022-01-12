@@ -48,6 +48,10 @@ Resources:
               - dynamodb:Delete*
               - dynamodb:Update*
               - dynamodb:PutItem
+              - dynamodb:PartiQLSelect
+              - dynamodb:PartiQLUpdate
+              - dynamodb:PartiQLInsert
+              - dynamodb:PartiQLDelete
             Resource: !Sub ${ users.Arn}
           - Sid: DDBLSIActions
             Action:

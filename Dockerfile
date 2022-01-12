@@ -36,5 +36,6 @@ COPY --from=reproxy-builder /usr/bin/reproxy /usr/bin/reproxy
 RUN "/tmp/s6-overlay-installer" /
 COPY s6 /etc
 ENV S6_KILL_GRACETIME=0
+ENV S6_SERVICES_GRACETIME=0
 ENTRYPOINT [ "/init" ]
 EXPOSE 80
