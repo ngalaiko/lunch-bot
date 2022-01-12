@@ -41,9 +41,6 @@ func NewHandler(
 	}))
 	r.Use(auth.Parser(jwtService))
 
-	r.With(middleware.AllowContentType("application/json", "application/x-www-form-urlencoded")).
-		Post("/slack-lunch-bot", slack.NewHandler(cfg.Slack, roller, usersService).ServeHTTP)
-
 	r.Route("/api", func(r chi.Router) {
 		r.With(middleware.AllowContentType("application/json", "application/x-www-form-urlencoded")).
 			Post("/webhooks/slack", slack.NewHandler(cfg.Slack, roller, usersService).ServeHTTP)
