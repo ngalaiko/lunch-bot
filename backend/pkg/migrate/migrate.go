@@ -8,6 +8,7 @@ import (
 	storage_places "lunch/pkg/lunch/places/storage"
 	storage_rolls "lunch/pkg/lunch/rolls/storage"
 	"lunch/pkg/store"
+	storage_users "lunch/pkg/users/storage"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -27,9 +28,15 @@ var (
 )
 
 func Run(ctx context.Context) error {
-	if err := migrateUsers(ctx, storage_places.NewDynamoDB(dynamodbStore, "lunch-production-webapp-places")); err != nil {
+	if err := migrateUsers(
+		ctx,
+		storage_places.NewDynamoDB(dynamodbStore, "lunch-production-webapp-places"),
+		storage_users.NewDynamoDB(dynamodbStore, "lunch-production-webapp-users"),
+	); err != nil {
 		return fmt.Errorf("failed to migrate users: %w", err)
 	}
+
+	return nil
 
 	if err := migratePlaces(
 		ctx,

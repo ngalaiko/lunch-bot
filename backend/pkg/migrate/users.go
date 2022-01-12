@@ -7,9 +7,10 @@ import (
 
 	storage_places "lunch/pkg/lunch/places/storage"
 	"lunch/pkg/users"
+	storage_users "lunch/pkg/users/storage"
 )
 
-func migrateUsers(ctx context.Context, placesStore storage_places.Storage) error {
+func migrateUsers(ctx context.Context, placesStore storage_places.Storage, usersStorage storage_users.Storage) error {
 	log.Printf("[INFO] migrating users")
 
 	places, err := placesStore.ListAll(ctx)
@@ -23,8 +24,10 @@ func migrateUsers(ctx context.Context, placesStore storage_places.Storage) error
 	}
 
 	for _, user := range uu {
-		fmt.Printf("\nnikitag: %+v\n\n", user)
+		if err := usersStorage.Create(ctx, user); err != nil {
+			return fmt.Errorf("failed to create user: %w", err)
+		}
 	}
 
-	return fmt.Errorf("not implemented")
+	return nil
 }
