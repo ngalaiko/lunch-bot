@@ -1,13 +1,16 @@
 package lunch
 
 import (
+	"io/ioutil"
 	"testing"
 	"time"
 
 	storage_boosts "lunch/pkg/lunch/boosts/storage"
+	"lunch/pkg/lunch/events"
 	"lunch/pkg/lunch/places"
 	storage_places "lunch/pkg/lunch/places/storage"
 	storage_rolls "lunch/pkg/lunch/rolls/storage"
+	"lunch/pkg/store"
 )
 
 func TestHistory_roll_boost__active_boost(t *testing.T) {
@@ -16,7 +19,12 @@ func TestHistory_roll_boost__active_boost(t *testing.T) {
 	today := time.Date(2021, time.September, 6, 9, 0, 0, 0, time.UTC) // Monday
 
 	ctx := testContext(testUser())
-	roller := New(storage_places.NewMemory(), storage_boosts.NewMemory(), storage_rolls.NewMemory())
+
+	file, err := ioutil.TempFile("", "test-bolt")
+	assertNoError(t, err)
+	bolt, err := store.NewBolt(file.Name())
+	assertNoError(t, err)
+	roller := New(storage_places.NewBolt(bolt), storage_boosts.NewBolt(bolt), storage_rolls.NewBolt(bolt), events.NewRegistry())
 	placeNames := []string{"place1", "place2", "place3"}
 	places := make([]*places.Place, len(placeNames))
 	for i, name := range placeNames {
@@ -49,7 +57,11 @@ func TestHistory_boost_roll__no_active_boost(t *testing.T) {
 	today := time.Date(2021, time.September, 6, 9, 0, 0, 0, time.UTC) // Monday
 
 	ctx := testContext(testUser())
-	roller := New(storage_places.NewMemory(), storage_boosts.NewMemory(), storage_rolls.NewMemory())
+	file, err := ioutil.TempFile("", "test-bolt")
+	assertNoError(t, err)
+	bolt, err := store.NewBolt(file.Name())
+	assertNoError(t, err)
+	roller := New(storage_places.NewBolt(bolt), storage_boosts.NewBolt(bolt), storage_rolls.NewBolt(bolt), events.NewRegistry())
 	placeNames := []string{"place1", "place2", "place3"}
 	places := make([]*places.Place, len(placeNames))
 	for i, name := range placeNames {

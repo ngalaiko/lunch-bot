@@ -4,15 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"reflect"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	storage_boosts "lunch/pkg/lunch/boosts/storage"
+	"lunch/pkg/lunch/events"
 	"lunch/pkg/lunch/places"
 	storage_places "lunch/pkg/lunch/places/storage"
 	storage_rolls "lunch/pkg/lunch/rolls/storage"
+	"lunch/pkg/store"
 	"lunch/pkg/users"
 )
 
@@ -20,9 +23,13 @@ func TestRoll_noPlaces(t *testing.T) {
 	t.Parallel()
 
 	ctx := testContext(testUser())
-	roller := New(storage_places.NewMemory(), storage_boosts.NewMemory(), storage_rolls.NewMemory())
+	file, err := ioutil.TempFile("", "test-bolt")
+	assertNoError(t, err)
+	bolt, err := store.NewBolt(file.Name())
+	assertNoError(t, err)
+	roller := New(storage_places.NewBolt(bolt), storage_boosts.NewBolt(bolt), storage_rolls.NewBolt(bolt), events.NewRegistry())
 
-	place,_,  err := roller.Roll(ctx, time.Now())
+	place, _, err := roller.Roll(ctx, time.Now())
 	assertError(t, ErrNoPlaces, err)
 	assertNil(t, place)
 }
@@ -35,7 +42,11 @@ func TestRoll_reroll_then_boost(t *testing.T) {
 	oneWeek := 7 * oneDay
 
 	ctx := testContext(testUser())
-	roller := New(storage_places.NewMemory(), storage_boosts.NewMemory(), storage_rolls.NewMemory())
+	file, err := ioutil.TempFile("", "test-bolt")
+	assertNoError(t, err)
+	bolt, err := store.NewBolt(file.Name())
+	assertNoError(t, err)
+	roller := New(storage_places.NewBolt(bolt), storage_boosts.NewBolt(bolt), storage_rolls.NewBolt(bolt), events.NewRegistry())
 	placeNames := []string{"place1", "place2", "place3"}
 	places := make([]*places.Place, len(placeNames))
 	for i, name := range placeNames {
@@ -47,7 +58,7 @@ func TestRoll_reroll_then_boost(t *testing.T) {
 	_, _, firstRollError := roller.Roll(ctx, today)
 	assertNoError(t, firstRollError)
 
-	_,_,  firstRerollError := roller.Roll(ctx, today.Add(1*time.Minute))
+	_, _, firstRerollError := roller.Roll(ctx, today.Add(1*time.Minute))
 	assertNoError(t, firstRerollError)
 
 	_, firstBoostError := roller.Boost(ctx, places[0].ID, today.Add(2*time.Minute))
@@ -65,7 +76,11 @@ func TestRoll_boost_then_reroll(t *testing.T) {
 	oneWeek := 7 * oneDay
 
 	ctx := testContext(testUser())
-	roller := New(storage_places.NewMemory(), storage_boosts.NewMemory(), storage_rolls.NewMemory())
+	file, err := ioutil.TempFile("", "test-bolt")
+	assertNoError(t, err)
+	bolt, err := store.NewBolt(file.Name())
+	assertNoError(t, err)
+	roller := New(storage_places.NewBolt(bolt), storage_boosts.NewBolt(bolt), storage_rolls.NewBolt(bolt), events.NewRegistry())
 	placeNames := []string{"place1", "place2", "place3"}
 	places := make([]*places.Place, len(placeNames))
 	for i, name := range placeNames {
@@ -74,7 +89,7 @@ func TestRoll_boost_then_reroll(t *testing.T) {
 		places[i] = place
 	}
 
-	_,_,  firstRollError := roller.Roll(ctx, today)
+	_, _, firstRollError := roller.Roll(ctx, today)
 	assertNoError(t, firstRollError)
 
 	_, firstBoostError := roller.Boost(ctx, places[0].ID, today.Add(1*time.Minute))
@@ -123,7 +138,12 @@ func TestRoll_rerolls(t *testing.T) {
 	}
 
 	ctx := testContext(testUser())
-	roller := New(storage_places.NewMemory(), storage_boosts.NewMemory(), storage_rolls.NewMemory())
+	file, err := ioutil.TempFile("", "test-bolt-*")
+	assertNoError(t, err)
+	bolt, err := store.NewBolt(file.Name())
+	assertNoError(t, err)
+	roller := New(storage_places.NewBolt(bolt), storage_boosts.NewBolt(bolt), storage_rolls.NewBolt(bolt), events.NewRegistry())
+
 	placeNames := []string{"place1", "place2", "place3"}
 	for _, name := range placeNames {
 		_, err := roller.NewPlace(ctx, name)
@@ -132,7 +152,8 @@ func TestRoll_rerolls(t *testing.T) {
 
 	for _, roll := range rolls {
 		t.Run(roll.Description, func(t *testing.T) {
-			place,_,  err := roller.Roll(testContext(roll.By), roll.When)
+			place, _, err := roller.Roll(testContext(roll.By), roll.When)
+
 			if roll.Error != nil {
 				assertError(t, roll.Error, err)
 				assertNil(t, place)

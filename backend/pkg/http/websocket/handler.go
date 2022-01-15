@@ -31,11 +31,12 @@ type handler struct {
 
 func Handler(roller *lunch.Roller) http.Handler {
 	r := chi.NewMux()
-	r.Get("/", (&handler{
+	h := &handler{
 		roller:               roller,
 		openConnections:      map[string]io.ReadWriter{},
 		openConnectionsGuard: &sync.RWMutex{},
-	}).ServeHTTP)
+	}
+	r.Get("/", h.ServeHTTP)
 	return r
 }
 

@@ -9,6 +9,7 @@ import (
 
 	"lunch/pkg/lunch/boosts"
 	storage_boosts "lunch/pkg/lunch/boosts/storage"
+	"lunch/pkg/lunch/events"
 	"lunch/pkg/lunch/places"
 	storage_places "lunch/pkg/lunch/places/storage"
 	"lunch/pkg/lunch/rolls"
@@ -26,6 +27,8 @@ type Roller struct {
 	rollsStore  storage_rolls.Storage
 	boostsStore storage_boosts.Storage
 
+	events *events.Registry
+
 	rand *rand.Rand
 }
 
@@ -33,11 +36,13 @@ func New(
 	placesStorage storage_places.Storage,
 	boostsStorage storage_boosts.Storage,
 	rollsStorage storage_rolls.Storage,
+	eventsRegistry *events.Registry,
 ) *Roller {
 	return &Roller{
 		placesStore: placesStorage,
 		rollsStore:  rollsStorage,
 		boostsStore: boostsStorage,
+		events:      eventsRegistry,
 		rand:        rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 }
@@ -52,6 +57,8 @@ func (r *Roller) NewPlace(ctx context.Context, name string) (*places.Place, erro
 	if err := r.placesStore.Store(ctx, place); err != nil {
 		return nil, fmt.Errorf("failed to store place: %w", err)
 	}
+
+	r.events.PlaceCreated(place)
 
 	return place, nil
 }
@@ -126,6 +133,8 @@ func (r *Roller) Boost(ctx context.Context, placeID places.ID, now time.Time) (*
 		return nil, fmt.Errorf("failed to store boost: %w", err)
 	}
 
+	r.events.BoostCreated(boost)
+
 	return boost, nil
 }
 
@@ -153,6 +162,8 @@ func (r *Roller) Roll(ctx context.Context, now time.Time) (*rolls.Roll, *places.
 	if err := r.rollsStore.Store(ctx, roll); err != nil {
 		return nil, nil, fmt.Errorf("failed to store roll result: %w", err)
 	}
+
+	r.events.RollCreated(roll)
 
 	return roll, place, nil
 }

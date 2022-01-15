@@ -123,6 +123,7 @@ func (h *rollsHistory) pointsLeft(user *users.User) int {
 			// first roll a day is always allowed
 			continue
 		}
+
 		for _, roll := range rolls[1:] {
 			// consecutive rolls a day are rerolls, only one reroll per week is allowed
 			if roll.UserID == user.ID {
@@ -130,6 +131,7 @@ func (h *rollsHistory) pointsLeft(user *users.User) int {
 			}
 		}
 	}
+
 	return points
 }
 
