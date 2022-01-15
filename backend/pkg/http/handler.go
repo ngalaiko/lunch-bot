@@ -6,7 +6,7 @@ import (
 	"lunch/pkg/http/auth"
 	"lunch/pkg/http/oauth"
 	"lunch/pkg/http/rest"
-	"lunch/pkg/http/slack"
+	"lunch/pkg/http/webhooks"
 	"lunch/pkg/http/websocket"
 	"lunch/pkg/jwt"
 	"lunch/pkg/lunch"
@@ -42,9 +42,7 @@ func NewHandler(
 	r.Use(auth.Parser(jwtService))
 
 	r.Route("/api", func(r chi.Router) {
-		r.With(middleware.AllowContentType("application/json", "application/x-www-form-urlencoded")).
-			Post("/webhooks/slack", slack.NewHandler(cfg.Slack, roller, usersService).ServeHTTP)
-
+		r.Mount("/webhooks", webhooks.Handler(cfg.Webhooks, roller, usersService))
 		r.Mount("/oauth", oauth.Handler(cfg.OAuth, jwtService, usersService))
 		r.Mount("/ws", websocket.Handler(roller))
 		r.Mount("/", rest.Handler())

@@ -8,8 +8,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func Handler() http.HandlerFunc {
-	r := chi.NewRouter()
-	r.Mount("/users", users.Handler())
-	return r.ServeHTTP
+func Handler() http.Handler {
+	r := chi.NewMux()
+	r.Mount("/users/", users.Handler())
+	return r
 }

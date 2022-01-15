@@ -4,17 +4,17 @@ import (
 	"fmt"
 
 	"lunch/pkg/http/oauth"
-	"lunch/pkg/http/slack"
+	"lunch/pkg/http/webhooks"
 )
 
 type Configuration struct {
-	Slack *slack.Configuration
-	OAuth *oauth.Configuration
+	Webhooks *webhooks.Configuration
+	OAuth    *oauth.Configuration
 }
 
 func (c *Configuration) Parse() error {
-	c.Slack = &slack.Configuration{}
-	if err := c.Slack.Parse(); err != nil {
+	c.Webhooks = &webhooks.Configuration{}
+	if err := c.Webhooks.Parse(); err != nil {
 		return fmt.Errorf("failed to parse slack configuration: %w", err)
 	}
 

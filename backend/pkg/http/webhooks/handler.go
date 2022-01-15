@@ -1,15 +1,14 @@
-package oauth
+package webhooks
 
 import (
 	"fmt"
 	"net/http"
 
-	"lunch/pkg/http/oauth/slack"
-	"lunch/pkg/jwt"
+	"lunch/pkg/http/webhooks/slack"
+	"lunch/pkg/lunch"
 	service_users "lunch/pkg/users/service"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 )
 
 type Configuration struct {
@@ -24,9 +23,8 @@ func (c *Configuration) Parse() error {
 	return nil
 }
 
-func Handler(cfg *Configuration, jwtService *jwt.Service, usersService *service_users.Service) http.Handler {
+func Handler(cfg *Configuration, roller *lunch.Roller, usersService *service_users.Service) http.Handler {
 	r := chi.NewMux()
-	applicationJSON := middleware.AllowContentType("application/json")
-	r.With(applicationJSON).Post("/slack", slack.Handler(cfg.Slack, jwtService, usersService))
+	r.Mount("/slack", slack.NewHandler(cfg.Slack, roller, usersService))
 	return r
 }

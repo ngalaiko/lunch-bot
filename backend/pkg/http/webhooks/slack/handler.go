@@ -15,6 +15,9 @@ import (
 	"lunch/pkg/lunch/places"
 	"lunch/pkg/users"
 	service_users "lunch/pkg/users/service"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 type Configuration struct {
@@ -38,13 +41,16 @@ type Handler struct {
 	usersService *service_users.Service
 }
 
-func NewHandler(cfg *Configuration, roller *lunch.Roller, usersService *service_users.Service) *Handler {
-	return &Handler{
+func NewHandler(cfg *Configuration, roller *lunch.Roller, usersService *service_users.Service) http.Handler {
+	h := &Handler{
 		cfg:          cfg,
 		roller:       roller,
 		client:       &http.Client{},
 		usersService: usersService,
 	}
+	r := chi.NewMux()
+	r.With(middleware.AllowContentType("application/json", "application/x-www-form-urlencoded")).Post("/", h.ServeHTTP)
+	return r
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
