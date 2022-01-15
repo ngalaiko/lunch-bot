@@ -1,7 +1,9 @@
 package http
 
 import (
+	"log"
 	"net/http"
+	"time"
 
 	"lunch/pkg/http/auth"
 	"lunch/pkg/http/oauth"
@@ -27,7 +29,7 @@ func NewHandler(
 ) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
-	r.Use(middleware.Logger)
+	r.Use(middleware.RequestLogger(&logFormatter{}))
 	r.Use(middleware.CleanPath)
 	r.Use(middleware.Recoverer)
 	r.Use(cors.Handler(cors.Options{
@@ -51,4 +53,26 @@ func NewHandler(
 	})
 
 	return r
+}
+
+type logEntry struct {
+	Path   string
+	Method string
+}
+
+func (le *logEntry) Write(status, bytes int, header http.Header, elapsed time.Duration, extra interface{}) {
+	log.Printf("[INFO] %s %s %d %s", le.Method, le.Path, status, elapsed)
+}
+
+func (le *logEntry) Panic(v interface{}, stack []byte) {
+	log.Printf("[ERROR] panic in handler: %+v\n%s", v, string(stack))
+}
+
+type logFormatter struct{}
+
+func (lf *logFormatter) NewLogEntry(r *http.Request) middleware.LogEntry {
+	return &logEntry{
+		Path:   r.URL.Path,
+		Method: r.Method,
+	}
 }
