@@ -40,7 +40,7 @@ func main() {
 		log.Fatalf("failed to parse configuration: %v", err)
 	}
 
-	srv := http.NewServer(cfg, roller, jwtService, usersService)
+	srv := http.NewServer(cfg, roller, jwtService, usersService, eventsRegistry)
 
 	// Wait for shut down in a separate goroutine.
 	errCh := make(chan error)

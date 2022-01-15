@@ -11,6 +11,7 @@ import (
 
 	"lunch/pkg/jwt"
 	"lunch/pkg/lunch"
+	"lunch/pkg/lunch/events"
 	service_users "lunch/pkg/users/service"
 )
 
@@ -19,9 +20,15 @@ type Server struct {
 	httpServer *http.Server
 }
 
-func NewServer(cfg *Configuration, roller *lunch.Roller, jwtService *jwt.Service, usersService *service_users.Service) *Server {
+func NewServer(
+	cfg *Configuration,
+	roller *lunch.Roller,
+	jwtService *jwt.Service,
+	usersService *service_users.Service,
+	eventsRegistry *events.Registry,
+) *Server {
 	return &Server{
-		handler: NewHandler(cfg, roller, jwtService, usersService),
+		handler: NewHandler(cfg, roller, jwtService, usersService, eventsRegistry),
 	}
 }
 

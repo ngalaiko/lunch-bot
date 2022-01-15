@@ -28,7 +28,7 @@ func (t *Type) String() string {
 	}
 }
 
-type Event struct {
+type event struct {
 	Type  Type
 	Place *places.Place
 	Roll  *rolls.Roll

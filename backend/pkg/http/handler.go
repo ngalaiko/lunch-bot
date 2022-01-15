@@ -10,6 +10,7 @@ import (
 	"lunch/pkg/http/websocket"
 	"lunch/pkg/jwt"
 	"lunch/pkg/lunch"
+	"lunch/pkg/lunch/events"
 	service_users "lunch/pkg/users/service"
 
 	"github.com/go-chi/chi/v5"
@@ -22,6 +23,7 @@ func NewHandler(
 	roller *lunch.Roller,
 	jwtService *jwt.Service,
 	usersService *service_users.Service,
+	eventsRegistry *events.Registry,
 ) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -44,7 +46,7 @@ func NewHandler(
 	r.Route("/api", func(r chi.Router) {
 		r.Mount("/webhooks", webhooks.Handler(cfg.Webhooks, roller, usersService))
 		r.Mount("/oauth", oauth.Handler(cfg.OAuth, jwtService, usersService))
-		r.Mount("/ws", websocket.Handler(roller))
+		r.Mount("/ws", websocket.Handler(roller, eventsRegistry))
 		r.Mount("/", rest.Handler())
 	})
 
