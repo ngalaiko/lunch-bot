@@ -18,10 +18,9 @@ import (
 )
 
 var (
-	eventsRegistry = events.NewRegistry()
-	roller         = lunch.New(placesStore, boostsStore, rollsStore, eventsRegistry)
-	jwtService     = jwt.NewService(jwtKeysStore)
-	usersService   = service_users.New(usersStore)
+	roller       = lunch.New(placesStore, boostsStore, rollsStore, events.NewRegistry())
+	jwtService   = jwt.NewService(jwtKeysStore)
+	usersService = service_users.New(usersStore)
 )
 
 var (
@@ -40,7 +39,7 @@ func main() {
 		log.Fatalf("failed to parse configuration: %v", err)
 	}
 
-	srv := http.NewServer(cfg, roller, jwtService, usersService, eventsRegistry)
+	srv := http.NewServer(cfg, roller, jwtService, usersService)
 
 	// Wait for shut down in a separate goroutine.
 	errCh := make(chan error)

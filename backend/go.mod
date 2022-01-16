@@ -12,6 +12,7 @@ require (
 	github.com/gobwas/ws v1.1.0
 	github.com/google/uuid v1.3.0
 	go.etcd.io/bbolt v1.3.6
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	gopkg.in/square/go-jose.v2 v2.6.0
 )
 

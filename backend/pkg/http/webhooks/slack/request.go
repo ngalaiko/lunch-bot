@@ -72,8 +72,10 @@ func ParseRequest(r *http.Request, signingSecret string) (*CommandRequest, *Acti
 		return nil, nil, nil, fmt.Errorf("failed to read request body: %w", err)
 	}
 
-	if err := verifySlackSignatureV0(r.Header, body, signingSecret); err != nil {
-		return nil, nil, nil, err
+	if len(signingSecret) > 0 {
+		if err := verifySlackSignatureV0(r.Header, body, signingSecret); err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to verify request signature: %w", err)
+		}
 	}
 
 	ct := r.Header.Get("Content-Type")

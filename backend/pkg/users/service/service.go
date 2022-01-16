@@ -17,6 +17,10 @@ func New(store storage.Storage) *Service {
 	return &Service{store: store}
 }
 
+func (s *Service) List(ctx context.Context) ([]*users.User, error) {
+	return s.store.List(ctx)
+}
+
 func (s *Service) Create(ctx context.Context, user *users.User) error {
 	if _, err := s.store.Get(ctx, user.ID); errors.Is(err, storage.ErrNotFound) {
 		return s.store.Create(ctx, user)

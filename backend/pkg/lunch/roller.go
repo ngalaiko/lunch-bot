@@ -47,6 +47,22 @@ func New(
 	}
 }
 
+func (r *Roller) OnRollCreated(fn func(context.Context, *rolls.Roll) error) {
+	r.events.OnRollCreated(fn)
+}
+
+func (r *Roller) OnPlaceCreated(fn func(context.Context, *places.Place) error) {
+	r.events.OnPlaceCreated(fn)
+}
+
+func (r *Roller) OnBoostCreated(fn func(context.Context, *boosts.Boost) error) {
+	r.events.OnBoostCreated(fn)
+}
+
+func (r *Roller) GetPlace(ctx context.Context, id places.ID) (*places.Place, error) {
+	return r.placesStore.GetByID(ctx, id)
+}
+
 func (r *Roller) NewPlace(ctx context.Context, name string) (*places.Place, error) {
 	user, ok := users.FromContext(ctx)
 	if !ok {

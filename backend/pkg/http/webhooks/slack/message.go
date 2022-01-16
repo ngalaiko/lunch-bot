@@ -15,8 +15,6 @@ type TextBlock struct {
 	Text string        `json:"text"`
 }
 
-type Text string
-
 func Markdown(format string, a ...interface{}) *TextBlock {
 	return &TextBlock{
 		Type: textBlockTypeMarkdown,
@@ -105,8 +103,8 @@ func WithButton(text *TextBlock, actionID, value string) sectionOption {
 type responseType string
 
 const (
-	responseTypeEphemeral responseType = "ephemeral"
-	responseTypeInChannel responseType = "in_channel"
+	ResponseTypeEphemeral responseType = "ephemeral"
+	ResponseTypeInChannel responseType = "in_channel"
 )
 
 // slash command response Message
@@ -114,11 +112,11 @@ const (
 type Message struct {
 	ReplaceOriginal bool         `json:"replace_original"`
 	ResponseType    responseType `json:"response_type,omitempty"`
-	Text            Text         `json:"text,omitempty"` // Text used in notifications as a fallback for Blocks
+	Text            string       `json:"text,omitempty"` // Text used in notifications as a fallback for Blocks
 	Blocks          []*Block     `json:"blocks,omitempty"`
 }
 
-func newReplaceMessage(rt responseType, text Text, sections ...*Block) *Message {
+func NewReplaceMessage(rt responseType, text string, sections ...*Block) *Message {
 	return &Message{
 		ReplaceOriginal: true,
 		ResponseType:    rt,
@@ -127,7 +125,7 @@ func newReplaceMessage(rt responseType, text Text, sections ...*Block) *Message 
 	}
 }
 
-func newMessage(rt responseType, text Text, sections ...*Block) *Message {
+func NewMessage(rt responseType, text string, sections ...*Block) *Message {
 	return &Message{
 		ResponseType: rt,
 		Text:         text,

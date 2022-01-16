@@ -8,31 +8,19 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"lunch/pkg/lunch"
+	"lunch/pkg/lunch/boosts"
 	"lunch/pkg/lunch/places"
+	"lunch/pkg/lunch/rolls"
 	"lunch/pkg/users"
 	service_users "lunch/pkg/users/service"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"golang.org/x/sync/errgroup"
 )
-
-type Configuration struct {
-	SigningSecret string
-}
-
-func (c *Configuration) Parse() error {
-	signingSecret := os.Getenv("SLACK_SIGNING_SECRET")
-	if signingSecret == "" {
-		log.Printf("[WARN] SLACK_SIGNING_SECRET is not set")
-	}
-	c.SigningSecret = signingSecret
-
-	return nil
-}
 
 type Handler struct {
 	cfg          *Configuration
@@ -48,8 +36,14 @@ func NewHandler(cfg *Configuration, roller *lunch.Roller, usersService *service_
 		client:       &http.Client{},
 		usersService: usersService,
 	}
+
+	roller.OnRollCreated(h.onRollCreated)
+	roller.OnBoostCreated(h.onBoostCreated)
+	roller.OnPlaceCreated(h.onPlaceCreated)
+
 	r := chi.NewMux()
 	r.With(middleware.AllowContentType("application/json", "application/x-www-form-urlencoded")).Post("/", h.ServeHTTP)
+
 	return r
 }
 
@@ -81,12 +75,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	case command != nil:
 		log.Printf("[INFO] incoming command: %+v", command)
+
 		user := &users.User{ID: command.UserID, Name: command.UserName}
 		if err := h.usersService.Create(r.Context(), user); err != nil {
 			log.Printf("[ERROR] failed to create user: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+
 		ctx := users.NewContext(r.Context(), user)
 		response := h.handleCommand(ctx, command)
 		if err := respondJSON(w, response); err != nil {
@@ -126,13 +122,13 @@ func (h *Handler) list(ctx context.Context) ([]*Block, error) {
 		return nil, err
 	}
 
-	blocks := []*Block{
+	bb := []*Block{
 		Section(nil, Markdown("*Title*"), Markdown("*Odds*")),
 		Divider(),
 	}
 
 	for _, chance := range chances {
-		blocks = append(blocks, SectionFields(
+		bb = append(bb, SectionFields(
 			[]*TextBlock{
 				PlainText("%s", chance.Name),
 				PlainText("%.2f%%", chance.Chance*100),
@@ -141,7 +137,7 @@ func (h *Handler) list(ctx context.Context) ([]*Block, error) {
 		))
 	}
 
-	return blocks, nil
+	return bb, nil
 }
 
 func (h *Handler) asyncPost(url string, msg *Message) error {
@@ -200,9 +196,9 @@ func (h *Handler) handleRoll(ctx context.Context) *Message {
 	_, place, err := h.roller.Roll(ctx, time.Now())
 	switch {
 	case err == nil:
-		return InChannel(
-			Text(fmt.Sprintf("Today's lunch place is... %s!", place.Name)),   // Used in notifications
-			Section(Markdown("Today's lunch place is... *%s*!", place.Name)), // Used in app
+		return Ephemeral(
+			fmt.Sprintf("You rolled %s", place.Name),         // Used in notifications
+			Section(Markdown("You rolled *%s*", place.Name)), // Used in app
 		)
 	case errors.Is(err, lunch.ErrNoPoints):
 		return Ephemeral("Failed to roll: no more points left")
@@ -218,7 +214,7 @@ func (h *Handler) handleAdd(ctx context.Context, placeName string) *Message {
 		return InternalServerError(err)
 	}
 	return Ephemeral(
-		Text(fmt.Sprintf("%s added", placeName)),
+		fmt.Sprintf("%s added", placeName),
 		Section(Markdown("*%s* added!", placeName)),
 	)
 }
@@ -243,4 +239,138 @@ func (h *Handler) handleCommand(ctx context.Context, cmd *CommandRequest) *Messa
 	default:
 		return BadRequest(fmt.Errorf("unknown command '%s'", cmd.Command))
 	}
+}
+
+func (s *Handler) onBoostCreated(ctx context.Context, boost *boosts.Boost) error {
+	place, err := s.roller.GetPlace(ctx, boost.PlaceID)
+	if err != nil {
+		return fmt.Errorf("failed to get place: %w", err)
+	}
+
+	text := fmt.Sprintf("<@%s> boosted %s", boost.UserID, place.Name)
+	blocks := Section(Markdown("<@%s> boosted *%s*", boost.UserID, place.Name))
+
+	users, err := s.usersService.List(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list users: %w", err)
+	}
+
+	wg, ctx := errgroup.WithContext(ctx)
+	for _, user := range users {
+		if user.ID == boost.UserID {
+			continue
+		}
+
+		user := user
+		wg.Go(func() error {
+			if err := s.sendMessage(ctx, user, text, blocks); err != nil {
+				return fmt.Errorf("failed to send message: %w", err)
+			}
+			return nil
+		})
+	}
+	return wg.Wait()
+}
+
+func (s *Handler) onPlaceCreated(ctx context.Context, place *places.Place) error {
+	text := fmt.Sprintf("<@%s> added %s", place.AddedBy.ID, place.Name)
+	blocks := Section(Markdown("<@%s> added *%s*", place.AddedBy.ID, place.Name))
+
+	users, err := s.usersService.List(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list users: %w", err)
+	}
+
+	wg, ctx := errgroup.WithContext(ctx)
+	for _, user := range users {
+		if user.ID == place.AddedBy.ID {
+			continue
+		}
+
+		user := user
+		wg.Go(func() error {
+			if err := s.sendMessage(ctx, user, text, blocks); err != nil {
+				return fmt.Errorf("failed to send message: %w", err)
+			}
+			return nil
+		})
+	}
+	return wg.Wait()
+}
+
+func (s *Handler) onRollCreated(ctx context.Context, roll *rolls.Roll) error {
+	place, err := s.roller.GetPlace(ctx, roll.PlaceID)
+	if err != nil {
+		return fmt.Errorf("failed to get place: %w", err)
+	}
+
+	users, err := s.usersService.List(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list users: %w", err)
+	}
+
+	text := fmt.Sprintf("<@%s> rolled %s", roll.UserID, place.Name)
+	blocks := Section(Markdown("<@%s> rolled *%s*", roll.UserID, place.Name))
+
+	wg, ctx := errgroup.WithContext(ctx)
+	for _, user := range users {
+		if user.ID == roll.UserID {
+			continue
+		}
+		user := user
+		wg.Go(func() error {
+			if err := s.sendMessage(ctx, user, text, blocks); err != nil {
+				return fmt.Errorf("failed to send message: %w", err)
+			}
+			return nil
+		})
+	}
+	return wg.Wait()
+}
+
+func (s *Handler) sendMessage(ctx context.Context, user *users.User, text string, blocks ...*Block) error {
+	type request struct {
+		Channel string   `json:"channel"`
+		Text    string   `json:"text"`
+		Blocks  []*Block `json:"blocks"`
+	}
+
+	log.Printf("[INFO] sending message to %s", user.ID)
+
+	type response struct {
+		OK    bool   `json:"ok"`
+		Error string `json:"error"`
+	}
+	body, err := json.Marshal(&request{
+		Channel: user.ID,
+		Text:    text,
+		Blocks:  blocks,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to marshal message: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, "https://slack.com/api/chat.postMessage", bytes.NewBuffer(body))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.cfg.BotAccessToken))
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var r response
+	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if r.OK {
+		return nil
+	}
+
+	return fmt.Errorf("failed to send message: %s", r.Error)
 }

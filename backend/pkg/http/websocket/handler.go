@@ -13,7 +13,6 @@ import (
 
 	"lunch/pkg/lunch"
 	"lunch/pkg/lunch/boosts"
-	"lunch/pkg/lunch/events"
 	"lunch/pkg/lunch/places"
 	"lunch/pkg/lunch/rolls"
 	"lunch/pkg/users"
@@ -25,14 +24,13 @@ import (
 )
 
 type handler struct {
-	roller         *lunch.Roller
-	eventsRegistry *events.Registry
+	roller *lunch.Roller
 
 	openConnections      map[string]io.ReadWriter
 	openConnectionsGuard *sync.RWMutex
 }
 
-func Handler(roller *lunch.Roller, eventsRegistry *events.Registry) http.Handler {
+func Handler(roller *lunch.Roller) http.Handler {
 	r := chi.NewMux()
 	h := &handler{
 		roller: roller,
@@ -41,9 +39,9 @@ func Handler(roller *lunch.Roller, eventsRegistry *events.Registry) http.Handler
 		openConnectionsGuard: &sync.RWMutex{},
 	}
 	r.Get("/", h.ServeHTTP)
-	eventsRegistry.OnBoostCreated(h.onBoostCreated)
-	eventsRegistry.OnPlaceCreated(h.onPlaceCreated)
-	eventsRegistry.OnRollCreated(h.onRollCreated)
+	roller.OnBoostCreated(h.onBoostCreated)
+	roller.OnPlaceCreated(h.onPlaceCreated)
+	roller.OnRollCreated(h.onRollCreated)
 	return r
 }
 
@@ -109,7 +107,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		msg, op, err := wsutil.ReadClientData(conn)
-		if err != nil {
+		if err != nil && err != io.EOF {
 			if _, isClosedErr := err.(wsutil.ClosedError); isClosedErr {
 				return
 			}

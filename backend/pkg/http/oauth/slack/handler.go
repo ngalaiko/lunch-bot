@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 
 	"lunch/pkg/http/auth"
@@ -15,33 +14,11 @@ import (
 	service_users "lunch/pkg/users/service"
 )
 
-type Configuration struct {
-	ClientID     string
-	ClientSecret string
-}
-
-func (c *Configuration) Parse() error {
-	clientID := os.Getenv("SLACK_CLIENT_ID")
-	if clientID == "" {
-		log.Printf("[WARN] SLACK_CLIENT_ID is not set")
-	}
-	c.ClientID = clientID
-
-	clientSecret := os.Getenv("SLACK_CLIENT_SECRET")
-	if clientSecret == "" {
-		log.Printf("[WARN] SLACK_CLIENT_SECRET is not set")
-	}
-	c.ClientSecret = clientSecret
-
-	return nil
-}
-
 func Handler(cfg *Configuration, jwtService *jwt.Service, usersService *service_users.Service) http.HandlerFunc {
 	type request struct {
 		Code        string `json:"code"`
 		RedirectURI string `json:"redirectUri"`
 	}
-
 	type response struct{}
 
 	type slackAuthedUser struct {
@@ -92,15 +69,15 @@ func Handler(cfg *Configuration, jwtService *jwt.Service, usersService *service_
 		}
 		defer resp.Body.Close()
 
-		var oatuhResponse slackOAuthResponse
-		if err := json.NewDecoder(resp.Body).Decode(&oatuhResponse); err != nil {
+		var oauthResponse slackOAuthResponse
+		if err := json.NewDecoder(resp.Body).Decode(&oauthResponse); err != nil {
 			log.Printf("[ERROR] failed to decode oauth response: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		if !oatuhResponse.OK {
-			log.Printf("[ERROR] failed to get access token: %s", oatuhResponse.Error)
+		if !oauthResponse.OK {
+			log.Printf("[ERROR] failed to get access token: %s", oauthResponse.Error)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -111,7 +88,7 @@ func Handler(cfg *Configuration, jwtService *jwt.Service, usersService *service_
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		identityRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", oatuhResponse.AuthedUser.AccessToken))
+		identityRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", oauthResponse.AuthedUser.AccessToken))
 
 		identityResponse, err := client.Do(identityRequest.WithContext(r.Context()))
 		if err != nil {
