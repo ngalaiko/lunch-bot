@@ -1,13 +1,12 @@
 <script lang="ts">
   import { Router, Route } from 'svelte-routing'
-  import Index from './pages/Index.svelte'
-  import NotFound from './pages/NotFound.svelte'
-  import { Auth } from './components'
-  import OAuthSlack from './pages/oauth/Slack.svelte'
+  import { Index, NotFound, Slack, History, List } from './pages'
 </script>
 
 <Router>
-  <Route path="/oauth/slack"><OAuthSlack /></Route>
-  <Route path="/"><Auth><Index /></Auth></Route>
+  <Route path="/oauth/slack"><Slack /></Route>
+  <!-- <Route path="/history"><History /></Route> -->
+  <Route path="/list"><List /></Route>
+  <Route path="/"><Index /></Route>
   <Route path="*"><NotFound /></Route>
 </Router>

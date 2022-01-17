@@ -19,7 +19,6 @@ func Handler(cfg *Configuration, jwtService *jwt.Service, usersService *service_
 		Code        string `json:"code"`
 		RedirectURI string `json:"redirectUri"`
 	}
-	type response struct{}
 
 	type slackAuthedUser struct {
 		ID          string `json:"id"`
@@ -133,7 +132,7 @@ func Handler(cfg *Configuration, jwtService *jwt.Service, usersService *service_
 		auth.SetCookie(w, token, secure)
 
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(&response{}); err != nil {
+		if err := json.NewEncoder(w).Encode(user); err != nil {
 			log.Printf("[ERROR] failed to encode response: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return

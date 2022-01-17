@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"lunch/pkg/http/auth"
 	"lunch/pkg/users"
 
 	"github.com/go-chi/chi/v5"
@@ -30,8 +31,15 @@ func getMe() http.HandlerFunc {
 	}
 }
 
+func logout() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		auth.RemoveCookie(w, r.TLS != nil)
+	}
+}
+
 func Handler() http.HandlerFunc {
 	r := chi.NewRouter()
 	r.Get("/me", getMe())
+	r.Post("/logout", logout())
 	return r.ServeHTTP
 }

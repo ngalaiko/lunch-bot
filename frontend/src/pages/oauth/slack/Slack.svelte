@@ -1,6 +1,6 @@
 <script lang="ts">
   import { navigate } from 'svelte-routing'
-  import { oauth } from '../../api'
+  import { users } from '../../../api'
 
   const params = new URLSearchParams(window.location.search)
 
@@ -8,8 +8,8 @@
   const next = params.get('next') as string
   const redirectUri = `${location.origin}/oauth/slack?next=${encodeURIComponent(next)}`
 
-  oauth
-    .slack(code, redirectUri)
+  users
+    .slackOAuth(code, redirectUri)
     .then(() => {
       navigate(next)
     })

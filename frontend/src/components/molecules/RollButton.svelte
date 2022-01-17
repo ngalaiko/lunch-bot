@@ -1,10 +1,14 @@
 <script lang="ts">
-  import { Button } from '../atoms'
+  import { CircleButton } from '../atoms'
   import { createEventDispatcher } from 'svelte'
+  import Icon from 'svelte-awesome'
+  import { refresh } from 'svelte-awesome/icons'
 
   const dispatch = createEventDispatcher()
 
   const onButtonClick = () => dispatch('roll')
 </script>
 
-<Button on:click={onButtonClick}>Roll</Button>
+<CircleButton on:click={onButtonClick}>
+  <Icon data={refresh} scale={1.5} />
+</CircleButton>

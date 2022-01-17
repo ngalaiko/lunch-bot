@@ -11,6 +11,21 @@ const (
 	cookieName = "auth"
 )
 
+func RemoveCookie(w http.ResponseWriter, secure bool) {
+	cookie := http.Cookie{
+		Name:     cookieName,
+		Value:    "",
+		MaxAge:   -1,
+		Path:     "/",
+		Secure:   secure,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+		Domain:   "",
+	}
+
+	http.SetCookie(w, &cookie)
+}
+
 func SetCookie(w http.ResponseWriter, token *jwt.Token, secure bool) {
 	cookie := http.Cookie{
 		Name:     cookieName,

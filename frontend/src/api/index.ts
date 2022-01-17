@@ -1,8 +1,6 @@
 export { default as users } from './users'
 export * from './users'
 
-export { default as oauth } from './oauth'
-
 export { default as places } from './places'
 export * from './places'
 

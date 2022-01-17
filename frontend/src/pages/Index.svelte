@@ -1,10 +1,12 @@
 <script lang="ts">
-  import { Places, LastRoll } from '../components'
+  import { LastRoll } from '../components'
+  import { Auth, Header } from '../components'
 </script>
 
-<main>
-  <div class="m-10">
-    <LastRoll />
-  </div>
-  <Places />
-</main>
+<Auth>
+  <Header>
+    <main class="flex justify-center m-24">
+      <LastRoll />
+    </main>
+  </Header>
+</Auth>
