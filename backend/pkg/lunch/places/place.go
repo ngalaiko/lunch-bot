@@ -15,7 +15,7 @@ type ID string
 type Place struct {
 	ID      ID          `dynamodbav:"id" json:"id"`
 	Name    Name        `dynamodbav:"name" json:"name"`
-	AddedAt time.Time   `dynamodbav:"added_at,unixtime" json:"addedAt"`
+	AddedAt time.Time   `dynamodbav:"added_at,unixtime" json:"time"`
 	AddedBy *users.User `dynamodbav:"added_by" json:"-"`
 }
 

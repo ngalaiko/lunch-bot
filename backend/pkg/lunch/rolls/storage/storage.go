@@ -8,5 +8,5 @@ import (
 
 type Storage interface {
 	Store(context.Context, *rolls.Roll) error
-	ListRolls(context.Context) ([]*rolls.Roll, error)
+	ListRolls(context.Context) (map[rolls.ID]*rolls.Roll, error)
 }

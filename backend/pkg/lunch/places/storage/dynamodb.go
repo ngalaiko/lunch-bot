@@ -45,10 +45,14 @@ func (s *DynamoDBStorage) GetByID(ctx context.Context, id places.ID) (*places.Pl
 	return places[0], nil
 }
 
-func (s *DynamoDBStorage) ListAll(ctx context.Context) ([]*places.Place, error) {
+func (s *DynamoDBStorage) ListAll(ctx context.Context) (map[places.ID]*places.Place, error) {
 	pp := []*places.Place{}
 	if err := s.storage.Query(ctx, &pp, fmt.Sprintf(`SELECT * FROM "%s"`, s.tableName)); err != nil {
 		return nil, fmt.Errorf("failed to select: %w", err)
 	}
-	return pp, nil
+	m := make(map[places.ID]*places.Place)
+	for _, p := range pp {
+		m[p.ID] = p
+	}
+	return m, nil
 }

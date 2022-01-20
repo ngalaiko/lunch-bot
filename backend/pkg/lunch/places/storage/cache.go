@@ -22,7 +22,7 @@ type cache struct {
 	placesByID      map[places.ID]*cached
 
 	placesListGuard       *sync.RWMutex
-	placesList            []*places.Place
+	placesList            map[places.ID]*places.Place
 	placesListInitialized *int64
 }
 
@@ -35,6 +35,7 @@ func NewCache(s Storage) *cache {
 		placesByID:      map[places.ID]*cached{},
 
 		placesListGuard:       &sync.RWMutex{},
+		placesList:            map[places.ID]*places.Place{},
 		placesListInitialized: &zero,
 	}
 }
@@ -49,7 +50,7 @@ func (c *cache) Store(ctx context.Context, place *places.Place) error {
 	c.placesByIDGuard.Unlock()
 
 	c.placesListGuard.Lock()
-	c.placesList = append(c.placesList, place)
+	c.placesList[place.ID] = place
 	c.placesListGuard.Unlock()
 	return nil
 }
@@ -70,13 +71,13 @@ func (c *cache) GetByID(ctx context.Context, id places.ID) (*places.Place, error
 	}
 
 	c.placesListGuard.Lock()
-	c.placesList = append(c.placesList, place)
+	c.placesList[id] = place
 	c.placesListGuard.Unlock()
 
 	return place, nil
 }
 
-func (c *cache) ListAll(ctx context.Context) ([]*places.Place, error) {
+func (c *cache) ListAll(ctx context.Context) (map[places.ID]*places.Place, error) {
 	if atomic.LoadInt64(c.placesListInitialized) == 1 {
 		c.placesListGuard.RLock()
 		defer c.placesListGuard.RUnlock()

@@ -1,5 +1,9 @@
-<script lang="ts">
+<script lang="ts" context="module">
   import { rolls } from '../../api'
+  const fetching = rolls.list()
+</script>
+
+<script lang="ts">
   import { RollButton, TimeSince } from '../molecules'
 
   $: lastRoll = $rolls.shift()
@@ -8,7 +12,7 @@
 </script>
 
 <div class="flex flex-col items-center">
-  {#await rolls.list()}
+  {#await fetching}
     loading...
   {:then}
     <div class="flex flex-col items-center m-3">

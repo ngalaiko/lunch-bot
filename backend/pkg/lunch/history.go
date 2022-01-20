@@ -1,8 +1,6 @@
 package lunch
 
 import (
-	"context"
-	"fmt"
 	"math"
 	"time"
 
@@ -25,17 +23,7 @@ type rollsHistory struct {
 	ActiveBoosts   map[places.ID][]*boosts.Boost
 }
 
-func (r *Roller) buildHistory(ctx context.Context, now time.Time) (*rollsHistory, error) {
-	allRolls, err := r.rollsStore.ListRolls(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list rolls: %w", err)
-	}
-
-	allBoosts, err := r.boostsStore.ListBoosts(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list boosts: %w", err)
-	}
-
+func buildHistory(allRolls map[rolls.ID]*rolls.Roll, allBoosts map[boosts.ID]*boosts.Boost, now time.Time) (*rollsHistory, error) {
 	year, week := now.ISOWeek()
 	thisWeekRolls := map[time.Weekday][]*rolls.Roll{}
 	lastRolled := map[places.ID]time.Time{}
@@ -137,29 +125,27 @@ func (h *rollsHistory) pointsLeft(user *users.User) int {
 
 // getWeights returns a list of weights for places to choose from.
 // higher weights means higher chance of choosing a place.
-// list of weights is the same length as list of places,
-// where weights[i] is the weight for places[i].
 //
 // weight are distributed in a way so that the most recent rolls get the lowest weight.
-func (h *rollsHistory) getWeights(places []*places.Place, now time.Time) []float64 {
-	placesTotal := len(places)
-	weights := make([]float64, placesTotal)
-	for i, place := range places {
+func (h *rollsHistory) getWeights(allPlaces map[places.ID]*places.Place, now time.Time) map[places.ID]float64 {
+	placesTotal := len(allPlaces)
+	weights := make(map[places.ID]float64, placesTotal)
+	for placeID, place := range allPlaces {
 		lastRolledAt, wasRolled := h.LastRolled[place.ID]
 		if !wasRolled {
-			weights[i] = float64(placesTotal)
+			weights[placeID] = float64(placesTotal)
 		} else {
 			rolledAgo := now.Sub(lastRolledAt)
 			rolledDaysAgo := int(math.Floor(rolledAgo.Hours() / hoursInADay))
 			if rolledDaysAgo >= placesTotal {
-				weights[i] = float64(placesTotal)
+				weights[placeID] = float64(placesTotal)
 			} else {
-				weights[i] = float64(rolledDaysAgo) + 1
+				weights[placeID] = float64(rolledDaysAgo) + 1
 			}
 		}
 
 		for range h.ActiveBoosts[place.ID] {
-			weights[i] *= boostMultiplier
+			weights[placeID] *= boostMultiplier
 		}
 	}
 	return weights

@@ -32,10 +32,14 @@ func (s *BoltDBStorage) GetByID(ctx context.Context, id places.ID) (*places.Plac
 	return place, nil
 }
 
-func (s *BoltDBStorage) ListAll(ctx context.Context) ([]*places.Place, error) {
-	var places = []*places.Place{}
-	if _, err := s.db.List(ctx, s.bucketName, &places, 100, nil); err != nil {
+func (s *BoltDBStorage) ListAll(ctx context.Context) (map[places.ID]*places.Place, error) {
+	pp := []*places.Place{}
+	if _, err := s.db.List(ctx, s.bucketName, &pp, 100, nil); err != nil {
 		return nil, fmt.Errorf("failed to list places: %w", err)
 	}
-	return places, nil
+	m := make(map[places.ID]*places.Place)
+	for _, p := range pp {
+		m[p.ID] = p
+	}
+	return m, nil
 }

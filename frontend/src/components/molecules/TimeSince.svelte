@@ -3,9 +3,11 @@
   import { onMount } from 'svelte'
 
   export let date: Date
+  const secondsInOneDay = 24 * 60 * 60 * 1000
 
-  $: now = new Date()
+  let now = new Date()
   onMount(() => {
+    if (now.getTime() - date.getTime() > secondsInOneDay) return () => {}
     const interval = setInterval(() => {
       now = new Date()
     }, 1000)

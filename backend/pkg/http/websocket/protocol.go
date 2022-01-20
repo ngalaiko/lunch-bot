@@ -2,8 +2,6 @@ package websocket
 
 import (
 	"lunch/pkg/lunch"
-	"lunch/pkg/lunch/boosts"
-	"lunch/pkg/lunch/rolls"
 )
 
 type method string
@@ -15,6 +13,7 @@ const (
 	methodRollsList    method = "rolls/list"
 	methodRollsCreate  method = "rolls/create"
 	methodBoostsCreate method = "boosts/create"
+	methodBoostsList   method = "boosts/list"
 )
 
 type request struct {
@@ -23,15 +22,10 @@ type request struct {
 	Params map[string]string `json:"params"`
 }
 
-type Roll struct {
-	*rolls.Roll
-	Place *lunch.Place `json:"place"`
-}
-
 type response struct {
-	ID     string          `json:"id"`
-	Places []*lunch.Place  `json:"places,omitempty"`
-	Rolls  []*Roll         `json:"rolls,omitempty"`
-	Boosts []*boosts.Boost `json:"boosts,omitempty"`
-	Error  string          `json:"error,omitempty"`
+	ID     string         `json:"id"`
+	Places []*lunch.Place `json:"places,omitempty"`
+	Rolls  []*lunch.Roll  `json:"rolls,omitempty"`
+	Boosts []*lunch.Boost `json:"boosts,omitempty"`
+	Error  string         `json:"error,omitempty"`
 }

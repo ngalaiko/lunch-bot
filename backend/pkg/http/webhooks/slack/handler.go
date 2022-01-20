@@ -11,9 +11,7 @@ import (
 	"time"
 
 	"lunch/pkg/lunch"
-	"lunch/pkg/lunch/boosts"
 	"lunch/pkg/lunch/places"
-	"lunch/pkg/lunch/rolls"
 	"lunch/pkg/users"
 	service_users "lunch/pkg/users/service"
 
@@ -159,7 +157,7 @@ func (h *Handler) asyncPost(url string, msg *Message) error {
 }
 
 func (h *Handler) handleBoost(ctx context.Context, responseURL string, placeID places.ID) error {
-	_, err := h.roller.Boost(ctx, placeID, time.Now())
+	err := h.roller.Boost(ctx, placeID, time.Now())
 	switch {
 	case err == nil:
 		responseBlocks, err := h.list(ctx)
@@ -193,12 +191,12 @@ func (h *Handler) handleActions(ctx context.Context, responseURL string, actions
 }
 
 func (h *Handler) handleRoll(ctx context.Context) *Message {
-	_, place, err := h.roller.Roll(ctx, time.Now())
+	roll, err := h.roller.Roll(ctx, time.Now())
 	switch {
 	case err == nil:
 		return Ephemeral(
-			fmt.Sprintf("You rolled %s", place.Name),         // Used in notifications
-			Section(Markdown("You rolled *%s*", place.Name)), // Used in app
+			fmt.Sprintf("You rolled %s", roll.Place.Name),         // Used in notifications
+			Section(Markdown("You rolled *%s*", roll.Place.Name)), // Used in app
 		)
 	case errors.Is(err, lunch.ErrNoPoints):
 		return Ephemeral("Failed to roll: no more points left")
@@ -210,7 +208,7 @@ func (h *Handler) handleRoll(ctx context.Context) *Message {
 }
 
 func (h *Handler) handleAdd(ctx context.Context, placeName string) *Message {
-	if _, err := h.roller.NewPlace(ctx, placeName); err != nil {
+	if err := h.roller.NewPlace(ctx, placeName); err != nil {
 		return InternalServerError(err)
 	}
 	return Ephemeral(
@@ -241,7 +239,7 @@ func (h *Handler) handleCommand(ctx context.Context, cmd *CommandRequest) *Messa
 	}
 }
 
-func (s *Handler) onBoostCreated(ctx context.Context, boost *boosts.Boost) error {
+func (s *Handler) onBoostCreated(ctx context.Context, boost *lunch.Boost) error {
 	place, err := s.roller.GetPlace(ctx, boost.PlaceID)
 	if err != nil {
 		return fmt.Errorf("failed to get place: %w", err)
@@ -272,7 +270,7 @@ func (s *Handler) onBoostCreated(ctx context.Context, boost *boosts.Boost) error
 	return wg.Wait()
 }
 
-func (s *Handler) onPlaceCreated(ctx context.Context, place *places.Place) error {
+func (s *Handler) onPlaceCreated(ctx context.Context, place *lunch.Place) error {
 	text := fmt.Sprintf("<@%s> added %s", place.AddedBy.ID, place.Name)
 	blocks := Section(Markdown("<@%s> added *%s*", place.AddedBy.ID, place.Name))
 
@@ -298,7 +296,7 @@ func (s *Handler) onPlaceCreated(ctx context.Context, place *places.Place) error
 	return wg.Wait()
 }
 
-func (s *Handler) onRollCreated(ctx context.Context, roll *rolls.Roll) error {
+func (s *Handler) onRollCreated(ctx context.Context, roll *lunch.Roll) error {
 	place, err := s.roller.GetPlace(ctx, roll.PlaceID)
 	if err != nil {
 		return fmt.Errorf("failed to get place: %w", err)

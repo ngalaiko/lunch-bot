@@ -8,5 +8,5 @@ import (
 
 type Storage interface {
 	Store(context.Context, *boosts.Boost) error
-	ListBoosts(context.Context) ([]*boosts.Boost, error)
+	ListBoosts(context.Context) (map[boosts.ID]*boosts.Boost, error)
 }

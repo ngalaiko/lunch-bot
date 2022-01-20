@@ -1,45 +1,53 @@
 import { writable } from 'svelte/store'
 import { websocket } from './protocols'
 import type { Place } from './places'
+import { parseJSON as parsePlaceJSON } from './places'
+import type { User } from './users'
+import { parseJSON as parseUserJSON } from './users'
 
 export type Roll = {
+  __typename: 'Roll'
+
   id: string
   placeId: string
+  userId: string
+  user: User
   time: Date
   place: Place
 }
 
 const store = writable<Roll[]>([])
 
-const storeResponse = (response: any) => {
-  response.rolls &&
-    response.rolls
-      .map((roll: any): Roll => {
-        return {
-          id: roll.id,
-          placeId: roll.placeId,
-          time: new Date(roll.time),
-          place: {
-            id: roll.place.id,
-            name: roll.place.name,
-            addedAt: new Date(roll.place.addedAt),
-            chance: roll.place.chance
-          }
-        }
-      })
-      .forEach((roll: Roll) =>
-        store.update(rolls =>
-          rolls
-            .filter(r => r.id !== roll.id)
-            .concat(roll)
-            .sort((a, b) => b.time.getTime() - a.time.getTime())
-        )
-      )
+const parseJSON = (data: any): Roll => {
+  return {
+    __typename: 'Roll',
+    id: data.id,
+    placeId: data.placeId,
+    time: new Date(data.time),
+    userId: data.userId,
+    user: parseUserJSON(data.user),
+    place: parsePlaceJSON(data.place)
+  }
 }
 
+const storeResponse = (response: any) => {
+  response.rolls &&
+    response.rolls.map(parseJSON).forEach((roll: Roll) =>
+      store.update(rolls =>
+        rolls
+          .filter(r => r.id !== roll.id)
+          .concat(roll)
+          .sort((a, b) => b.time.getTime() - a.time.getTime())
+      )
+    )
+}
+
+let listPromise: Promise<any> | undefined
 const list = async (): Promise<void> => {
   await websocket.open()
-  const response = await websocket.request({ method: 'rolls/list' })
+  if (listPromise) return await listPromise
+  listPromise = websocket.request({ method: 'rolls/list' })
+  const response = await listPromise
   if (response.error) throw new Error(response.error)
   storeResponse(response)
 }

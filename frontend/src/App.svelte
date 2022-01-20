@@ -5,7 +5,7 @@
 
 <Router>
   <Route path="/oauth/slack"><Slack /></Route>
-  <!-- <Route path="/history"><History /></Route> -->
+  <Route path="/history"><History /></Route>
   <Route path="/list"><List /></Route>
   <Route path="/"><Index /></Route>
   <Route path="*"><NotFound /></Route>

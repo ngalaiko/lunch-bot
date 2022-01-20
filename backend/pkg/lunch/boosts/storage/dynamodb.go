@@ -37,10 +37,14 @@ func (dynamodb *DynamoDBStorage) Store(ctx context.Context, boost *boosts.Boost)
 	return nil
 }
 
-func (dynamo *DynamoDBStorage) ListBoosts(ctx context.Context) ([]*boosts.Boost, error) {
+func (dynamo *DynamoDBStorage) ListBoosts(ctx context.Context) (map[boosts.ID]*boosts.Boost, error) {
 	bb := []*boosts.Boost{}
 	if err := dynamo.storage.Query(ctx, &bb, fmt.Sprintf(`SELECT * FROM "%s"`, dynamo.tableName)); err != nil {
 		return nil, fmt.Errorf("failed to select: %w", err)
 	}
-	return bb, nil
+	m := make(map[boosts.ID]*boosts.Boost)
+	for _, b := range bb {
+		m[b.ID] = b
+	}
+	return m, nil
 }

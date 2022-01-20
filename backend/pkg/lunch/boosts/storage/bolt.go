@@ -24,10 +24,14 @@ func (s *BoltDBStorage) Store(ctx context.Context, boost *boosts.Boost) error {
 	return s.db.Put(ctx, s.bucketName, string(boost.ID), boost)
 }
 
-func (s *BoltDBStorage) ListBoosts(ctx context.Context) ([]*boosts.Boost, error) {
-	var boosts = []*boosts.Boost{}
-	if _, err := s.db.List(ctx, s.bucketName, &boosts, 100, nil); err != nil {
+func (s *BoltDBStorage) ListBoosts(ctx context.Context) (map[boosts.ID]*boosts.Boost, error) {
+	bb := []*boosts.Boost{}
+	if _, err := s.db.List(ctx, s.bucketName, &bb, 100, nil); err != nil {
 		return nil, fmt.Errorf("failed to list boosts: %w", err)
 	}
-	return boosts, nil
+	m := make(map[boosts.ID]*boosts.Boost)
+	for _, boost := range bb {
+		m[boost.ID] = boost
+	}
+	return m, nil
 }

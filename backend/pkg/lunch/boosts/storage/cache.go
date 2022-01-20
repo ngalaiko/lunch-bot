@@ -13,7 +13,7 @@ var _ Storage = &cache{}
 type cache struct {
 	storage Storage
 
-	boosts            []*boosts.Boost
+	boosts            map[boosts.ID]*boosts.Boost
 	boostsGuard       *sync.RWMutex
 	boostsInitialized *int64
 }
@@ -22,6 +22,7 @@ func NewCache(s Storage) *cache {
 	var zero int64 = 0
 	return &cache{
 		storage:           s,
+		boosts:            make(map[boosts.ID]*boosts.Boost),
 		boostsGuard:       &sync.RWMutex{},
 		boostsInitialized: &zero,
 	}
@@ -33,12 +34,12 @@ func (c *cache) Store(ctx context.Context, boost *boosts.Boost) error {
 	}
 
 	c.boostsGuard.Lock()
-	c.boosts = append(c.boosts, boost)
+	c.boosts[boost.ID] = boost
 	c.boostsGuard.Unlock()
 	return nil
 }
 
-func (c *cache) ListBoosts(ctx context.Context) ([]*boosts.Boost, error) {
+func (c *cache) ListBoosts(ctx context.Context) (map[boosts.ID]*boosts.Boost, error) {
 	if atomic.LoadInt64(c.boostsInitialized) == 1 {
 		c.boostsGuard.RLock()
 		defer c.boostsGuard.RUnlock()

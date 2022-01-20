@@ -13,6 +13,11 @@
       title: 'List',
       path: '/list',
       active: document.location.pathname === '/list'
+    },
+    {
+      title: 'History',
+      path: '/history',
+      active: document.location.pathname === '/history'
     }
   ]
   const onLogoutClick = users.logout

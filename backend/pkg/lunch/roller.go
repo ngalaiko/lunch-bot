@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
-	"sort"
 	"time"
 
 	"lunch/pkg/lunch/boosts"
@@ -15,6 +14,7 @@ import (
 	"lunch/pkg/lunch/rolls"
 	storage_rolls "lunch/pkg/lunch/rolls/storage"
 	"lunch/pkg/users"
+	storage_users "lunch/pkg/users/storage"
 )
 
 var (
@@ -28,6 +28,7 @@ type Roller struct {
 	boostsStore storage_boosts.Storage
 
 	events *events.Registry
+	views  *views
 
 	rand *rand.Rand
 }
@@ -37,55 +38,87 @@ func New(
 	boostsStorage storage_boosts.Storage,
 	rollsStorage storage_rolls.Storage,
 	eventsRegistry *events.Registry,
+	userService storage_users.Storage,
 ) *Roller {
 	return &Roller{
 		placesStore: placesStorage,
 		rollsStore:  rollsStorage,
 		boostsStore: boostsStorage,
 		events:      eventsRegistry,
-		rand:        rand.New(rand.NewSource(time.Now().UnixNano())),
+		views: &views{
+			placesStore:  placesStorage,
+			boostsStore:  boostsStorage,
+			rollsStore:   rollsStorage,
+			usersStorage: userService,
+		},
+		rand: rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 }
 
-func (r *Roller) OnRollCreated(fn func(context.Context, *rolls.Roll) error) {
-	r.events.OnRollCreated(fn)
+func (r *Roller) OnRollCreated(fn func(context.Context, *Roll) error) {
+	r.events.OnRollCreated(func(ctx context.Context, roll *rolls.Roll) error {
+		rr, err := r.views.Rolls(ctx, map[rolls.ID]*rolls.Roll{roll.ID: roll})
+		if err != nil {
+			return fmt.Errorf("failed to view roll: %w", err)
+		}
+		return fn(ctx, rr[0])
+	})
 }
 
-func (r *Roller) OnPlaceCreated(fn func(context.Context, *places.Place) error) {
-	r.events.OnPlaceCreated(fn)
+func (r *Roller) OnPlaceCreated(fn func(context.Context, *Place) error) {
+	r.events.OnPlaceCreated(func(ctx context.Context, place *places.Place) error {
+		pp, err := r.views.Places(ctx, time.Now(), map[places.ID]*places.Place{place.ID: place})
+		if err != nil {
+			return fmt.Errorf("failed to view place: %w", err)
+		}
+		return fn(ctx, pp[0])
+	})
 }
 
-func (r *Roller) OnBoostCreated(fn func(context.Context, *boosts.Boost) error) {
-	r.events.OnBoostCreated(fn)
+func (r *Roller) OnBoostCreated(fn func(context.Context, *Boost) error) {
+	r.events.OnBoostCreated(func(ctx context.Context, boost *boosts.Boost) error {
+		bb, err := r.views.Boosts(ctx, map[boosts.ID]*boosts.Boost{boost.ID: boost})
+		if err != nil {
+			return fmt.Errorf("failed to view boost: %w", err)
+		}
+		return fn(ctx, bb[0])
+	})
 }
 
 func (r *Roller) GetPlace(ctx context.Context, id places.ID) (*places.Place, error) {
 	return r.placesStore.GetByID(ctx, id)
 }
 
-func (r *Roller) NewPlace(ctx context.Context, name string) (*places.Place, error) {
+func (r *Roller) NewPlace(ctx context.Context, name string) error {
 	user, ok := users.FromContext(ctx)
 	if !ok {
-		return nil, fmt.Errorf("expected to find who in the context")
+		return fmt.Errorf("expected to find who in the context")
 	}
 
 	place := places.NewPlace(places.Name(name), user)
 	if err := r.placesStore.Store(ctx, place); err != nil {
-		return nil, fmt.Errorf("failed to store place: %w", err)
+		return fmt.Errorf("failed to store place: %w", err)
 	}
 
 	r.events.PlaceCreated(place)
 
-	return place, nil
+	return nil
 }
 
-func (r *Roller) ListRolls(ctx context.Context) ([]*rolls.Roll, error) {
-	return r.rollsStore.ListRolls(ctx)
+func (r *Roller) ListRolls(ctx context.Context) ([]*Roll, error) {
+	allRolls, err := r.rollsStore.ListRolls(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list rolls: %w", err)
+	}
+	return r.views.Rolls(ctx, allRolls)
 }
 
-type Place struct {
-	*places.Place
-	Chance float64 `json:"chance"`
+func (r *Roller) ListBoosts(ctx context.Context) ([]*Boost, error) {
+	allBoosts, err := r.boostsStore.ListBoosts(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list boosts: %w", err)
+	}
+	return r.views.Boosts(ctx, allBoosts)
 }
 
 func (r *Roller) ListPlaces(ctx context.Context, now time.Time) ([]*Place, error) {
@@ -98,90 +131,87 @@ func (r *Roller) ListPlaces(ctx context.Context, now time.Time) ([]*Place, error
 		return nil, ErrNoPlaces
 	}
 
-	history, err := r.buildHistory(ctx, now)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build history")
-	}
-
-	weights := history.getWeights(allPlaces, now)
-	weightsSum := 0.0
-	for _, weight := range weights {
-		weightsSum += weight
-	}
-
-	chances := make([]*Place, len(allPlaces))
-	for i, weight := range weights {
-		chance := weight / weightsSum
-		chances[i] = &Place{
-			Place:  allPlaces[i],
-			Chance: chance,
-		}
-	}
-
-	sort.SliceStable(chances, func(i, j int) bool {
-		return chances[i].Name < chances[j].Name
-	})
-
-	sort.SliceStable(chances, func(i, j int) bool {
-		return chances[i].Chance > chances[j].Chance
-	})
-
-	return chances, nil
+	return r.views.Places(ctx, now, allPlaces)
 }
 
-func (r *Roller) Boost(ctx context.Context, placeID places.ID, now time.Time) (*boosts.Boost, error) {
+func (r *Roller) Boost(ctx context.Context, placeID places.ID, now time.Time) error {
+	user, ok := users.FromContext(ctx)
+	if !ok {
+		return fmt.Errorf("expected to find who in the context")
+	}
+
+	allRolls, err := r.rollsStore.ListRolls(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list rolls: %w", err)
+	}
+
+	allBoosts, err := r.boostsStore.ListBoosts(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list boosts: %w", err)
+	}
+
+	history, err := buildHistory(allRolls, allBoosts, now)
+	if err != nil {
+		return fmt.Errorf("failed to build history: %w", err)
+	}
+
+	if err := history.CanBoost(user, now); err != nil {
+		return fmt.Errorf("can't boost any more: %w", err)
+	}
+
+	boost := boosts.NewBoost(user, placeID, now)
+	if err := r.boostsStore.Store(ctx, boost); err != nil {
+		return fmt.Errorf("failed to store boost: %w", err)
+	}
+
+	r.events.BoostCreated(boost)
+
+	return nil
+}
+
+func (r *Roller) Roll(ctx context.Context, now time.Time) (*Roll, error) {
 	user, ok := users.FromContext(ctx)
 	if !ok {
 		return nil, fmt.Errorf("expected to find who in the context")
 	}
 
-	history, err := r.buildHistory(ctx, now)
+	allRolls, err := r.rollsStore.ListRolls(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list rolls: %w", err)
+	}
+
+	allBoosts, err := r.boostsStore.ListBoosts(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list boosts: %w", err)
+	}
+
+	history, err := buildHistory(allRolls, allBoosts, now)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build history: %w", err)
 	}
 
-	if err := history.CanBoost(user, now); err != nil {
-		return nil, fmt.Errorf("can't boost any more: %w", err)
-	}
-
-	boost := boosts.NewBoost(user, placeID, now)
-	if err := r.boostsStore.Store(ctx, boost); err != nil {
-		return nil, fmt.Errorf("failed to store boost: %w", err)
-	}
-
-	r.events.BoostCreated(boost)
-
-	return boost, nil
-}
-
-func (r *Roller) Roll(ctx context.Context, now time.Time) (*rolls.Roll, *places.Place, error) {
-	user, ok := users.FromContext(ctx)
-	if !ok {
-		return nil, nil, fmt.Errorf("expected to find who in the context")
-	}
-
-	history, err := r.buildHistory(ctx, now)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to build history: %w", err)
-	}
-
 	if err := history.CanRoll(user, now); err != nil {
-		return nil, nil, fmt.Errorf("failed to validate rules: %w", err)
+		return nil, fmt.Errorf("failed to validate rules: %w", err)
 	}
 
 	place, err := r.pickRandomPlace(ctx, history, now)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to pick random place: %w", err)
+		return nil, fmt.Errorf("failed to pick random place: %w", err)
 	}
 
 	roll := rolls.NewRoll(user, place.ID, now)
 	if err := r.rollsStore.Store(ctx, roll); err != nil {
-		return nil, nil, fmt.Errorf("failed to store roll result: %w", err)
+		return nil, fmt.Errorf("failed to store roll result: %w", err)
 	}
 
 	r.events.RollCreated(roll)
 
-	return roll, place, nil
+	rr, err := r.views.Rolls(ctx, map[rolls.ID]*rolls.Roll{roll.ID: roll})
+	if err != nil {
+		return nil, err
+	}
+
+	return rr[0], nil
 }
 
 func (r *Roller) pickRandomPlace(ctx context.Context, history *rollsHistory, now time.Time) (*places.Place, error) {
@@ -197,16 +227,11 @@ func (r *Roller) pickRandomPlace(ctx context.Context, history *rollsHistory, now
 	weights := history.getWeights(allPlaces, now)
 	randomIndex := weightedRandom(r.rand, weights)
 	randomPlace := allPlaces[randomIndex]
-	place, err := r.placesStore.GetByID(ctx, randomPlace.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get place by id: %w", err)
-	}
-
-	return place, nil
+	return randomPlace, nil
 }
 
 // weightedRandom returns a random index i from the slice of weights, proportional to the weights[i] value.
-func weightedRandom(rand *rand.Rand, weights []float64) int {
+func weightedRandom(rand *rand.Rand, weights map[places.ID]float64) places.ID {
 	weightsSum := 0.0
 	for _, weight := range weights {
 		weightsSum += weight
@@ -221,5 +246,5 @@ func weightedRandom(rand *rand.Rand, weights []float64) int {
 	}
 
 	// never happens
-	return -1
+	return ""
 }

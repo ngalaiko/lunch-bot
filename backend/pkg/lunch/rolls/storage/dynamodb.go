@@ -37,10 +37,14 @@ func (dynamodb *DynamoDBStorage) Store(ctx context.Context, roll *rolls.Roll) er
 	return nil
 }
 
-func (dynamo *DynamoDBStorage) ListRolls(ctx context.Context) ([]*rolls.Roll, error) {
+func (dynamo *DynamoDBStorage) ListRolls(ctx context.Context) (map[rolls.ID]*rolls.Roll, error) {
 	rr := []*rolls.Roll{}
 	if err := dynamo.storage.Query(ctx, &rr, fmt.Sprintf(`SELECT * FROM "%s"`, dynamo.tableName)); err != nil {
 		return nil, fmt.Errorf("failed to select: %w", err)
 	}
-	return rr, nil
+	m := make(map[rolls.ID]*rolls.Roll, len(rr))
+	for _, r := range rr {
+		m[r.ID] = r
+	}
+	return m, nil
 }

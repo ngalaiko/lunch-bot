@@ -1,5 +1,10 @@
+<script lang="ts" context="module">
+  import { places } from '../../api'
+  const fetching = places.list()
+</script>
+
 <script lang="ts">
-  import { places, boosts } from '../../api'
+  import { boosts } from '../../api'
   import { Place, NewPlaceForm } from '../molecules'
 
   const handleOnBoost = (e: CustomEvent) =>
@@ -19,7 +24,7 @@
 </script>
 
 <div class="flex flex-col items-center">
-  {#await places.list()}
+  {#await fetching}
     <p>Loading...</p>
   {:then}
     <ul class="flex flex-col items-stretch space-y-2">

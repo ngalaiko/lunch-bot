@@ -1,29 +1,41 @@
 import { writable } from 'svelte/store'
 import { websocket } from './protocols'
+import type { Place } from './places'
+import { parseJSON as parsePlaceJSON } from './places'
+import type { User } from './users'
+import { parseJSON as parseUserJSON } from './users'
 
 export type Boost = {
+  __typename: 'Boost'
+
   id: string
-  userId: string
-  placeId: string
   time: Date
+  userId: string
+  user: User
+  placeId: string
+  place: Place
 }
 
 const store = writable<Boost[]>([])
 
+const parseJSON = (data: any): Boost => {
+  return {
+    __typename: 'Boost',
+
+    id: data.id,
+    time: new Date(data.time),
+    placeId: data.placeId,
+    place: parsePlaceJSON(data.place),
+    userId: data.userId,
+    user: parseUserJSON(data.user)
+  }
+}
+
 const storeResponse = (response: any) => {
   response.boosts &&
-    response.boosts
-      .map((boost: any) => {
-        return {
-          id: boost.id,
-          userId: boost.userId,
-          placeId: boost.placeId,
-          time: new Date(boost.time)
-        }
-      })
-      .forEach((boost: Boost) => {
-        store.update(boosts => boosts.filter(b => b.id !== boost.id).concat(boost))
-      })
+    response.boosts.map(parseJSON).forEach((boost: Boost) => {
+      store.update(boosts => boosts.filter(b => b.id !== boost.id).concat(boost))
+    })
 }
 
 const create = async (placeId: string): Promise<void> => {
@@ -36,9 +48,20 @@ const create = async (placeId: string): Promise<void> => {
   storeResponse(response)
 }
 
+let listPromise: Promise<any> | undefined
+const list = async (): Promise<void> => {
+  await websocket.open()
+  if (listPromise) return await listPromise
+  listPromise = await websocket.request({ method: 'boosts/list' })
+  const response = await listPromise
+  if (response.error) throw new Error(response.error)
+  storeResponse(response)
+}
+
 websocket.onMessage(storeResponse)
 
 export default {
   create,
+  list,
   subscribe: store.subscribe
 }

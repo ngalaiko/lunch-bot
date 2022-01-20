@@ -8,15 +8,18 @@ export type User = {
 
 const store = writable<User | null>(null)
 
+export const parseJSON = (data: any): User => {
+  return {
+    id: data.id,
+    name: data.name
+  }
+}
+
 const getMe = async (): Promise<void> =>
   await http
     .get('users/me')
-    .then(user => {
-      store.set({
-        id: user.id,
-        name: user.name
-      })
-    })
+    .then(parseJSON)
+    .then(store.set)
     .catch((e: Error) => {
       if (e.message.startsWith('401')) return
       throw e

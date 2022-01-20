@@ -1,35 +1,45 @@
 import { writable } from 'svelte/store'
 import { websocket } from './protocols'
+import type { User } from './users'
+import { parseJSON as parseUserJSON } from './users'
 
 export type Place = {
+  __typename: 'Place'
+
   id: string
   name: string
-  addedAt: Date
   chance: number
+  time: Date
+  userId?: string
+  user?: User
 }
 
 const store = writable<Place[]>([])
 
+export const parseJSON = (data: any): Place => {
+  return {
+    __typename: 'Place',
+
+    id: data.id,
+    name: data.name,
+    chance: data.chance,
+    time: new Date(data.time),
+    userId: data.userId,
+    user: data.user ? parseUserJSON(data.user) : undefined
+  }
+}
+
 const storeResponse = (response: any) => {
   response.places &&
-    response.places
-      .map((place: any): Place => {
-        return {
-          id: place.id,
-          name: place.name,
-          addedAt: new Date(place.addedAt),
-          chance: place.chance
-        }
-      })
-      .forEach((place: Place) =>
-        store.update(places =>
-          places
-            .filter(p => p.id !== place.id)
-            .sort((a, b) => b.addedAt.getTime() - a.addedAt.getTime())
-            .sort((a, b) => b.chance - a.chance)
-            .concat(place)
-        )
+    response.places.map(parseJSON).forEach((place: Place) =>
+      store.update(places =>
+        places
+          .filter(p => p.id !== place.id)
+          .sort((a, b) => b.time.getTime() - a.time.getTime())
+          .sort((a, b) => b.chance - a.chance)
+          .concat(place)
       )
+    )
 }
 
 const create = async (name: string): Promise<void> => {
@@ -40,9 +50,12 @@ const create = async (name: string): Promise<void> => {
   storeResponse(response)
 }
 
+let listPromise: Promise<any> | undefined
 const list = async (): Promise<void> => {
   await websocket.open()
-  const response = await websocket.request({ method: 'places/list' })
+  if (listPromise) return await listPromise
+  listPromise = websocket.request({ method: 'places/list' })
+  const response = await listPromise
   if (response.error) throw new Error(response.error)
   storeResponse(response)
 }
