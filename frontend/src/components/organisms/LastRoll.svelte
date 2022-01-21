@@ -6,7 +6,7 @@
 <script lang="ts">
   import { RollButton, TimeSince } from '../molecules'
 
-  $: lastRoll = $rolls.shift()
+  $: lastRoll = $rolls.sort((a, b) => b.time.getTime() - a.time.getTime()).at(0)
 
   const onRoll = () => rolls.create().catch(alert)
 </script>
