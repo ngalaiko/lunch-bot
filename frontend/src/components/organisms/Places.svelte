@@ -21,6 +21,10 @@
           newPlaceName = ''
         })
   }
+
+  $: sortedList = $places
+    .sort((a, b) => b.time.getTime() - a.time.getTime())
+    .sort((a, b) => b.chance - a.chance)
 </script>
 
 <div class="flex flex-col items-center">
@@ -29,7 +33,7 @@
   {:then}
     <ul class="flex flex-col items-stretch space-y-2">
       <li><NewPlaceForm on:submit={handleOnSubmit} bind:name={newPlaceName} /></li>
-      {#each $places as place}
+      {#each sortedList as place}
         <li><Place on:boost={handleOnBoost} {place} /></li>
       {/each}
     </ul>

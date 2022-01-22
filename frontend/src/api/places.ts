@@ -31,15 +31,11 @@ export const parseJSON = (data: any): Place => {
 
 const storeResponse = (response: any) => {
   response.places &&
-    response.places.map(parseJSON).forEach((place: Place) =>
-      store.update(places =>
-        places
-          .filter(p => p.id !== place.id)
-          .sort((a, b) => b.time.getTime() - a.time.getTime())
-          .sort((a, b) => b.chance - a.chance)
-          .concat(place)
+    response.places
+      .map(parseJSON)
+      .forEach((place: Place) =>
+        store.update(places => places.filter(p => p.id !== place.id).concat(place))
       )
-    )
 }
 
 const create = async (name: string): Promise<void> => {
