@@ -29,9 +29,9 @@ func (s *DynamoDBStorage) Store(ctx context.Context, place *places.Place) error 
 				'id': ?,
 				'name': ?,
 				'added_at': ?,
-				'added_by': ?
+				'user_id': ?
 			}
-	`, s.tableName), place.ID, place.Name, place.AddedAt.Unix(), place.AddedBy); err != nil {
+	`, s.tableName), place.ID, place.Name, place.AddedAt.Unix(), place.UserID); err != nil {
 		return fmt.Errorf("failed to insert: %w", err)
 	}
 	return nil
@@ -45,9 +45,23 @@ func (s *DynamoDBStorage) GetByID(ctx context.Context, id places.ID) (*places.Pl
 	return places[0], nil
 }
 
+func (s *DynamoDBStorage) Update(ctx context.Context, place *places.Place) error {
+	if err := s.storage.Execute(ctx, fmt.Sprintf(`
+		UPDATE "%s"
+			SET user_id = ?
+		WHERE id = ? AND added_at = ?
+	`, s.tableName), place.UserID, place.ID, place.AddedAt.Unix()); err != nil {
+		return fmt.Errorf("failed to update: %w", err)
+	}
+	return nil
+}
+
 func (s *DynamoDBStorage) ListAll(ctx context.Context) (map[places.ID]*places.Place, error) {
 	pp := []*places.Place{}
-	if err := s.storage.Query(ctx, &pp, fmt.Sprintf(`SELECT * FROM "%s"`, s.tableName)); err != nil {
+	if err := s.storage.Query(ctx, &pp, fmt.Sprintf(`
+		SELECT 
+			id, name, added_at, user_id
+		FROM "%s"`, s.tableName)); err != nil {
 		return nil, fmt.Errorf("failed to select: %w", err)
 	}
 	m := make(map[places.ID]*places.Place)

@@ -29,12 +29,10 @@ func migrateRolls(ctx context.Context, from, to storage_rolls.Storage) error {
 		isMigrated[roll.ID] = true
 	}
 
-	for i, roll := range toMigrate {
+	for _, roll := range toMigrate {
 		if isMigrated[roll.ID] {
-			log.Printf("[INFO] %d/%d roll already migrated, skipping", i+1, len(toMigrate))
 			continue
 		}
-		log.Printf("[INFO] %d/%d migrating %+v", i+1, len(toMigrate), roll)
 		if err := to.Store(ctx, roll); err != nil {
 			log.Printf("[ERROR] failed to migrate %+v: %s", roll, err)
 			continue

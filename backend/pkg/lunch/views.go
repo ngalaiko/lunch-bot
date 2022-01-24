@@ -18,7 +18,6 @@ import (
 type Place struct {
 	*places.Place
 	User   *users.User `json:"user"`
-	UserID string      `json:"userId"`
 	Chance float64     `json:"chance"`
 }
 
@@ -51,15 +50,16 @@ func (v *views) Boosts(ctx context.Context, bb map[boosts.ID]*boosts.Boost) ([]*
 		return nil, fmt.Errorf("failed to list places: %w", err)
 	}
 
+	allUsers, err := v.usersStorage.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list users: %w", err)
+	}
+
 	boosts := make([]*Boost, 0, len(bb))
 	for _, b := range bb {
-		user, err := v.usersStorage.Get(ctx, b.UserID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get user: %w", err)
-		}
 		boosts = append(boosts, &Boost{
 			Boost: b,
-			User:  user,
+			User:  allUsers[b.UserID],
 			Place: allPlaces[b.PlaceID],
 		})
 	}
@@ -77,15 +77,16 @@ func (v *views) Rolls(ctx context.Context, rr map[rolls.ID]*rolls.Roll) ([]*Roll
 		return nil, fmt.Errorf("failed to list places: %w", err)
 	}
 
+	allUsers, err := v.usersStorage.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list users: %w", err)
+	}
+
 	rolls := make([]*Roll, 0, len(rr))
 	for _, r := range rr {
-		user, err := v.usersStorage.Get(ctx, r.UserID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get user: %w", err)
-		}
 		rolls = append(rolls, &Roll{
 			Roll:  r,
-			User:  user,
+			User:  allUsers[r.UserID],
 			Place: allPlaces[r.PlaceID],
 		})
 	}
@@ -113,6 +114,11 @@ func (v *views) Places(ctx context.Context, now time.Time, pp map[places.ID]*pla
 		return nil, fmt.Errorf("failed to list places: %w", err)
 	}
 
+	allUsers, err := v.usersStorage.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list users: %w", err)
+	}
+
 	history, err := buildHistory(allRolls, allBoosts, now)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build history")
@@ -132,8 +138,7 @@ func (v *views) Places(ctx context.Context, now time.Time, pp map[places.ID]*pla
 		chance := weight / weightsSum
 		views = append(views, &Place{
 			Place:  pp[i],
-			User:   pp[i].AddedBy,
-			UserID: pp[i].AddedBy.ID,
+			User:   allUsers[pp[i].UserID],
 			Chance: chance,
 		})
 	}

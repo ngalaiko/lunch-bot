@@ -2,9 +2,10 @@ package storage
 
 import (
 	"context"
-	"lunch/pkg/users"
 	"sync"
 	"sync/atomic"
+
+	"lunch/pkg/users"
 )
 
 type cached struct {
@@ -20,7 +21,7 @@ type cache struct {
 	byID      map[string]*cached
 	byIDGuard *sync.RWMutex
 
-	list            []*users.User
+	list            map[string]*users.User
 	listGuard       *sync.RWMutex
 	listInitialized *int64
 }
@@ -32,6 +33,7 @@ func NewCache(s Storage) *cache {
 		byID:      make(map[string]*cached),
 		byIDGuard: &sync.RWMutex{},
 
+		list:            make(map[string]*users.User),
 		listGuard:       &sync.RWMutex{},
 		listInitialized: &zero,
 	}
@@ -49,7 +51,7 @@ func (c *cache) Create(ctx context.Context, user *users.User) error {
 	c.byIDGuard.Unlock()
 
 	c.listGuard.Lock()
-	c.list = append(c.list, user)
+	c.list[user.ID] = user
 	c.listGuard.Unlock()
 
 	return nil
@@ -73,13 +75,13 @@ func (c *cache) Get(ctx context.Context, id string) (*users.User, error) {
 	c.byIDGuard.Unlock()
 
 	c.listGuard.Lock()
-	c.list = append(c.list, user)
+	c.list[user.ID] = user
 	c.listGuard.Unlock()
 
 	return user, err
 }
 
-func (c *cache) List(ctx context.Context) ([]*users.User, error) {
+func (c *cache) List(ctx context.Context) (map[string]*users.User, error) {
 	if atomic.LoadInt64(c.listInitialized) == 1 {
 		c.listGuard.RLock()
 		defer c.listGuard.RUnlock()

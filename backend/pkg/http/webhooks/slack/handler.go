@@ -271,8 +271,8 @@ func (s *Handler) onBoostCreated(ctx context.Context, boost *lunch.Boost) error 
 }
 
 func (s *Handler) onPlaceCreated(ctx context.Context, place *lunch.Place) error {
-	text := fmt.Sprintf("<@%s> added %s", place.AddedBy.ID, place.Name)
-	blocks := Section(Markdown("<@%s> added *%s*", place.AddedBy.ID, place.Name))
+	text := fmt.Sprintf("<@%s> added %s", place.UserID, place.Name)
+	blocks := Section(Markdown("<@%s> added *%s*", place.UserID, place.Name))
 
 	users, err := s.usersService.List(ctx)
 	if err != nil {
@@ -281,7 +281,7 @@ func (s *Handler) onPlaceCreated(ctx context.Context, place *lunch.Place) error 
 
 	wg, ctx := errgroup.WithContext(ctx)
 	for _, user := range users {
-		if user.ID == place.AddedBy.ID {
+		if user.ID == place.UserID {
 			continue
 		}
 

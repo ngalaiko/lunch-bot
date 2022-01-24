@@ -13,17 +13,17 @@ type Name string
 type ID string
 
 type Place struct {
-	ID      ID          `dynamodbav:"id" json:"id"`
-	Name    Name        `dynamodbav:"name" json:"name"`
-	AddedAt time.Time   `dynamodbav:"added_at,unixtime" json:"time"`
-	AddedBy *users.User `dynamodbav:"added_by" json:"-"`
+	ID      ID        `dynamodbav:"id" json:"id"`
+	Name    Name      `dynamodbav:"name" json:"name"`
+	AddedAt time.Time `dynamodbav:"added_at,unixtime" json:"time"`
+	UserID  string    `dynamodbav:"user_id" json:"userId"`
 }
 
 func NewPlace(name Name, user *users.User) *Place {
 	return &Place{
 		ID:      ID(uuid.NewString()),
 		Name:    name,
-		AddedBy: user,
 		AddedAt: time.Now(),
+		UserID:  user.ID,
 	}
 }

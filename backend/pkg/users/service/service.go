@@ -21,7 +21,7 @@ func (s *Service) Get(ctx context.Context, userID string) (*users.User, error) {
 	return s.store.Get(ctx, userID)
 }
 
-func (s *Service) List(ctx context.Context) ([]*users.User, error) {
+func (s *Service) List(ctx context.Context) (map[string]*users.User, error) {
 	return s.store.List(ctx)
 }
 

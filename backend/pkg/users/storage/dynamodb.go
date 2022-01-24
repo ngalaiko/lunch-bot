@@ -42,10 +42,14 @@ func (d *dynamoDB) Get(ctx context.Context, id string) (*users.User, error) {
 	return users[0], nil
 }
 
-func (d *dynamoDB) List(ctx context.Context) ([]*users.User, error) {
-	users := []*users.User{}
-	if err := d.storage.Query(ctx, &users, fmt.Sprintf(`SELECT * FROM "%s"`, d.tableName)); err != nil {
+func (d *dynamoDB) List(ctx context.Context) (map[string]*users.User, error) {
+	uu := []*users.User{}
+	if err := d.storage.Query(ctx, &uu, fmt.Sprintf(`SELECT * FROM "%s"`, d.tableName)); err != nil {
 		return nil, fmt.Errorf("failed to select: %w", err)
 	}
-	return users, nil
+	m := make(map[string]*users.User, len(uu))
+	for _, u := range uu {
+		m[u.ID] = u
+	}
+	return m, nil
 }

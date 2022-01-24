@@ -29,12 +29,10 @@ func migrateBoosts(ctx context.Context, from, to storage_boosts.Storage) error {
 		isMigrated[boost.ID] = true
 	}
 
-	for i, boost := range toMigrate {
+	for _, boost := range toMigrate {
 		if isMigrated[boost.ID] {
-			log.Printf("[INFO] %d/%d boost already migrated, skipping", i+1, len(toMigrate))
 			continue
 		}
-		log.Printf("[INFO] %d/%d migrating %+v", i+1, len(toMigrate), boost)
 		if err := to.Store(ctx, boost); err != nil {
 			log.Printf("[ERROR] failed to migrate %+v: %s", boost, err)
 		}

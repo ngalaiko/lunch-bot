@@ -28,6 +28,10 @@ var (
 )
 
 func Run(ctx context.Context) error {
+	if err := updatePlaces(ctx, storage_places.NewDynamoDB(dynamodbStore, "lunch-production-webapp-places")); err != nil {
+		return err
+	}
+	return nil
 	if err := migrateUsers(
 		ctx,
 		storage_places.NewDynamoDB(dynamodbStore, "lunch-production-webapp-places"),
@@ -35,8 +39,6 @@ func Run(ctx context.Context) error {
 	); err != nil {
 		return fmt.Errorf("failed to migrate users: %w", err)
 	}
-
-	return nil
 
 	if err := migratePlaces(
 		ctx,
