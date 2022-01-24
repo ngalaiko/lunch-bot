@@ -17,11 +17,11 @@ func New(store storage.Storage) *Service {
 	return &Service{store: store}
 }
 
-func (s *Service) Get(ctx context.Context, userID string) (*users.User, error) {
-	return s.store.Get(ctx, userID)
+func (s *Service) Get(ctx context.Context, id users.ID) (*users.User, error) {
+	return s.store.Get(ctx, id)
 }
 
-func (s *Service) List(ctx context.Context) (map[string]*users.User, error) {
+func (s *Service) List(ctx context.Context) (map[users.ID]*users.User, error) {
 	return s.store.List(ctx)
 }
 

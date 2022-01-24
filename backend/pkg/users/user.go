@@ -1,6 +1,8 @@
 package users
 
+type ID string
+
 type User struct {
-	ID   string `dynamodbav:"id" json:"id"`
+	ID   ID     `dynamodbav:"id" json:"id"`
 	Name string `dynamodbav:"name" json:"name"`
 }

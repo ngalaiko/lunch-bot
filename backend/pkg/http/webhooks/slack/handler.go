@@ -57,7 +57,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case actions != nil:
 		log.Printf("[INFO] incoming actions: %+v", actions)
 
-		user := &users.User{ID: actions.User.ID, Name: actions.User.Name}
+		user := &users.User{ID: users.ID(actions.User.ID), Name: actions.User.Name}
 		if err := h.usersService.Create(r.Context(), user); err != nil {
 			log.Printf("[ERROR] failed to create user: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -74,7 +74,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case command != nil:
 		log.Printf("[INFO] incoming command: %+v", command)
 
-		user := &users.User{ID: command.UserID, Name: command.UserName}
+		user := &users.User{ID: users.ID(command.UserID), Name: command.UserName}
 		if err := h.usersService.Create(r.Context(), user); err != nil {
 			log.Printf("[ERROR] failed to create user: %s", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -340,7 +340,7 @@ func (s *Handler) sendMessage(ctx context.Context, user *users.User, text string
 		Error string `json:"error"`
 	}
 	body, err := json.Marshal(&request{
-		Channel: user.ID,
+		Channel: string(user.ID),
 		Text:    text,
 		Blocks:  blocks,
 	})

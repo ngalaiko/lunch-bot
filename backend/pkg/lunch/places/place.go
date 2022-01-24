@@ -16,7 +16,7 @@ type Place struct {
 	ID      ID        `dynamodbav:"id" json:"id"`
 	Name    Name      `dynamodbav:"name" json:"name"`
 	AddedAt time.Time `dynamodbav:"added_at,unixtime" json:"time"`
-	UserID  string    `dynamodbav:"user_id" json:"userId"`
+	UserID  users.ID  `dynamodbav:"user_id" json:"userId"`
 }
 
 func NewPlace(name Name, user *users.User) *Place {

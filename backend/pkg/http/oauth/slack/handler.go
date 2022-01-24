@@ -111,7 +111,7 @@ func Handler(cfg *Configuration, jwtService *jwt.Service, usersService *service_
 		}
 
 		user := &users.User{
-			ID:   identityResponseBody.User.ID,
+			ID:   users.ID(identityResponseBody.User.ID),
 			Name: identityResponseBody.User.Name,
 		}
 

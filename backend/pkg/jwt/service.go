@@ -102,7 +102,7 @@ func (s *Service) NewToken(ctx context.Context, user *users.User) (*Token, error
 	claims := &jwt.Claims{
 		ID:       uuid.New().String(),
 		Issuer:   defaultIssuer,
-		Subject:  user.ID,
+		Subject:  string(user.ID),
 		IssuedAt: jwt.NewNumericDate(now),
 		Expiry:   jwt.NewNumericDate(now.Add(validFor)),
 	}
@@ -159,7 +159,7 @@ func (s *Service) Verify(ctx context.Context, token string) (*Token, error) {
 		return &Token{
 			Token: token,
 			User: &users.User{
-				ID:   claims.Subject,
+				ID:   users.ID(claims.Subject),
 				Name: customClaims.Name,
 			},
 			ExpiresAt: claims.Expiry.Time(),

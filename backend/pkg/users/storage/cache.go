@@ -18,10 +18,10 @@ var _ Storage = &cache{}
 type cache struct {
 	storage Storage
 
-	byID      map[string]*cached
+	byID      map[users.ID]*cached
 	byIDGuard *sync.RWMutex
 
-	list            map[string]*users.User
+	list            map[users.ID]*users.User
 	listGuard       *sync.RWMutex
 	listInitialized *int64
 }
@@ -30,10 +30,10 @@ func NewCache(s Storage) *cache {
 	var zero int64 = 0
 	return &cache{
 		storage:   s,
-		byID:      make(map[string]*cached),
+		byID:      make(map[users.ID]*cached),
 		byIDGuard: &sync.RWMutex{},
 
-		list:            make(map[string]*users.User),
+		list:            make(map[users.ID]*users.User),
 		listGuard:       &sync.RWMutex{},
 		listInitialized: &zero,
 	}
@@ -57,7 +57,7 @@ func (c *cache) Create(ctx context.Context, user *users.User) error {
 	return nil
 }
 
-func (c *cache) Get(ctx context.Context, id string) (*users.User, error) {
+func (c *cache) Get(ctx context.Context, id users.ID) (*users.User, error) {
 	c.byIDGuard.RLock()
 	if cached, ok := c.byID[id]; ok {
 		c.byIDGuard.RUnlock()
@@ -81,7 +81,7 @@ func (c *cache) Get(ctx context.Context, id string) (*users.User, error) {
 	return user, err
 }
 
-func (c *cache) List(ctx context.Context) (map[string]*users.User, error) {
+func (c *cache) List(ctx context.Context) (map[users.ID]*users.User, error) {
 	if atomic.LoadInt64(c.listInitialized) == 1 {
 		c.listGuard.RLock()
 		defer c.listGuard.RUnlock()

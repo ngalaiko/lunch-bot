@@ -27,9 +27,9 @@ func (s *bolt) Create(ctx context.Context, user *users.User) error {
 	return s.db.Put(ctx, s.bucketName, string(user.ID), user)
 }
 
-func (s *bolt) Get(ctx context.Context, id string) (*users.User, error) {
+func (s *bolt) Get(ctx context.Context, id users.ID) (*users.User, error) {
 	var user *users.User
-	if err := s.db.Get(ctx, s.bucketName, id, &user); errors.Is(err, store.ErrNotFound) {
+	if err := s.db.Get(ctx, s.bucketName, string(id), &user); errors.Is(err, store.ErrNotFound) {
 		return nil, ErrNotFound
 	} else if err != nil {
 		return nil, fmt.Errorf("failed to get user by id: %w", err)
@@ -37,12 +37,12 @@ func (s *bolt) Get(ctx context.Context, id string) (*users.User, error) {
 	return user, nil
 }
 
-func (s *bolt) List(ctx context.Context) (map[string]*users.User, error) {
+func (s *bolt) List(ctx context.Context) (map[users.ID]*users.User, error) {
 	uu := []*users.User{}
 	if _, err := s.db.List(ctx, s.bucketName, &uu, 100, nil); err != nil {
 		return nil, fmt.Errorf("failed to list users: %w", err)
 	}
-	m := make(map[string]*users.User, len(uu))
+	m := make(map[users.ID]*users.User, len(uu))
 	for _, u := range uu {
 		m[u.ID] = u
 	}
