@@ -1,85 +1,333 @@
 package lunch
 
 import (
-	"io/ioutil"
 	"testing"
 	"time"
 
-	storage_boosts "lunch/pkg/lunch/boosts/storage"
-	"lunch/pkg/lunch/events"
+	"lunch/pkg/lunch/boosts"
 	"lunch/pkg/lunch/places"
-	storage_places "lunch/pkg/lunch/places/storage"
-	storage_rolls "lunch/pkg/lunch/rolls/storage"
-	"lunch/pkg/store"
+	"lunch/pkg/lunch/rolls"
+	"lunch/pkg/users"
 )
 
-func TestHistory_roll_boost__active_boost(t *testing.T) {
+func TestHistory(t *testing.T) {
 	t.Parallel()
 
 	today := time.Date(2021, time.September, 6, 9, 0, 0, 0, time.UTC) // Monday
 
-	ctx := testContext(testUser())
-
-	file, err := ioutil.TempFile("", "test-bolt")
-	assertNoError(t, err)
-	bolt, err := store.NewBolt(file.Name())
-	assertNoError(t, err)
-	roller := New(storage_places.NewBolt(bolt), storage_boosts.NewBolt(bolt), storage_rolls.NewBolt(bolt), events.NewRegistry())
-	placeNames := []string{"place1", "place2", "place3"}
-	places := make([]*places.Place, len(placeNames))
-	for i, name := range placeNames {
-		place, err := roller.NewPlace(ctx, name)
-		assertNoError(t, err)
-		places[i] = place
+	testCases := []struct {
+		name       string
+		boosts     []*boosts.Boost
+		rolls      []*rolls.Roll
+		time       time.Time
+		expected   *rollsHistory
+		canBoost   map[users.ID]error
+		canRoll    map[users.ID]error
+		pointsLeft map[users.ID]int
+	}{
+		{
+			name: "boost and roll",
+			time: today.Add(time.Hour),
+			rolls: []*rolls.Roll{
+				{
+					ID:      rolls.ID("1"),
+					UserID:  users.ID("1"),
+					PlaceID: places.ID("1"),
+					Time:    today.Add(time.Minute),
+				},
+			},
+			boosts: []*boosts.Boost{
+				{
+					ID:      boosts.ID("1"),
+					UserID:  users.ID("1"),
+					PlaceID: places.ID("1"),
+					Time:    today,
+				},
+			},
+			canBoost: map[users.ID]error{
+				users.ID("1"): ErrNoPoints,
+				users.ID("2"): nil,
+			},
+			canRoll: map[users.ID]error{
+				users.ID("1"): ErrNoPoints,
+				users.ID("2"): nil,
+			},
+			pointsLeft: map[users.ID]int{
+				users.ID("1"): 0,
+				users.ID("2"): 1,
+			},
+			expected: &rollsHistory{
+				ThisWeekBoosts: []*boosts.Boost{
+					{
+						ID:      boosts.ID("1"),
+						UserID:  users.ID("1"),
+						PlaceID: places.ID("1"),
+						Time:    today,
+					},
+				},
+				RollsPerWeekday: map[time.Weekday][]*rolls.Roll{
+					time.Monday: {
+						{
+							ID:      rolls.ID("1"),
+							UserID:  users.ID("1"),
+							PlaceID: places.ID("1"),
+							Time:    today.Add(time.Minute),
+						},
+					},
+				},
+				LastRolled: map[places.ID]time.Time{
+					places.ID("1"): today.Add(time.Minute),
+				},
+				ActiveBoosts: map[places.ID]int{},
+			},
+		},
+		{
+			name: "roll and boost",
+			time: today.Add(time.Hour),
+			rolls: []*rolls.Roll{
+				{
+					ID:      rolls.ID("1"),
+					UserID:  users.ID("1"),
+					PlaceID: places.ID("1"),
+					Time:    today,
+				},
+			},
+			boosts: []*boosts.Boost{
+				{
+					ID:      boosts.ID("1"),
+					UserID:  users.ID("1"),
+					PlaceID: places.ID("1"),
+					Time:    today.Add(time.Minute),
+				},
+			},
+			canBoost: map[users.ID]error{
+				users.ID("1"): ErrNoPoints,
+				users.ID("2"): nil,
+			},
+			canRoll: map[users.ID]error{
+				users.ID("1"): ErrNoPoints,
+				users.ID("2"): nil,
+			},
+			pointsLeft: map[users.ID]int{
+				users.ID("1"): 0,
+				users.ID("2"): 1,
+			},
+			expected: &rollsHistory{
+				ThisWeekBoosts: []*boosts.Boost{
+					{
+						ID:      boosts.ID("1"),
+						UserID:  users.ID("1"),
+						PlaceID: places.ID("1"),
+						Time:    today.Add(time.Minute),
+					},
+				},
+				RollsPerWeekday: map[time.Weekday][]*rolls.Roll{
+					time.Monday: {
+						{
+							ID:      rolls.ID("1"),
+							UserID:  users.ID("1"),
+							PlaceID: places.ID("1"),
+							Time:    today,
+						},
+					},
+				},
+				LastRolled: map[places.ID]time.Time{
+					places.ID("1"): today,
+				},
+				ActiveBoosts: map[places.ID]int{
+					places.ID("1"): 1,
+				},
+			},
+		},
+		{
+			name: "two rolls",
+			time: today.Add(2 * time.Hour),
+			rolls: []*rolls.Roll{
+				{
+					ID:      rolls.ID("1"),
+					UserID:  users.ID("1"),
+					PlaceID: places.ID("1"),
+					Time:    today,
+				},
+				{
+					ID:      rolls.ID("2"),
+					UserID:  users.ID("1"),
+					PlaceID: places.ID("1"),
+					Time:    today.Add(time.Hour),
+				},
+			},
+			canBoost: map[users.ID]error{
+				users.ID("1"): ErrNoPoints,
+				users.ID("2"): nil,
+			},
+			canRoll: map[users.ID]error{
+				users.ID("1"): ErrNoPoints,
+				users.ID("2"): nil,
+			},
+			pointsLeft: map[users.ID]int{
+				users.ID("1"): 0,
+				users.ID("2"): 1,
+			},
+			expected: &rollsHistory{
+				ThisWeekBoosts: []*boosts.Boost{},
+				RollsPerWeekday: map[time.Weekday][]*rolls.Roll{
+					time.Monday: {
+						{
+							ID:      rolls.ID("1"),
+							UserID:  users.ID("1"),
+							PlaceID: places.ID("1"),
+							Time:    today,
+						},
+						{
+							ID:      rolls.ID("2"),
+							UserID:  users.ID("1"),
+							PlaceID: places.ID("1"),
+							Time:    today.Add(time.Hour),
+						},
+					},
+				},
+				LastRolled: map[places.ID]time.Time{
+					places.ID("1"): today.Add(time.Hour),
+				},
+				ActiveBoosts: map[places.ID]int{},
+			},
+		},
+		{
+			name: "one boost",
+			time: today,
+			boosts: []*boosts.Boost{
+				{
+					ID:      boosts.ID("1"),
+					UserID:  users.ID("1"),
+					PlaceID: places.ID("1"),
+					Time:    today,
+				},
+			},
+			canBoost: map[users.ID]error{
+				users.ID("1"): ErrNoPoints,
+				users.ID("2"): nil,
+			},
+			canRoll: map[users.ID]error{
+				users.ID("1"): nil,
+				users.ID("2"): nil,
+			},
+			pointsLeft: map[users.ID]int{
+				users.ID("1"): 0,
+				users.ID("2"): 1,
+			},
+			expected: &rollsHistory{
+				ThisWeekBoosts: []*boosts.Boost{
+					{
+						ID:      boosts.ID("1"),
+						UserID:  users.ID("1"),
+						PlaceID: places.ID("1"),
+						Time:    today,
+					},
+				},
+				RollsPerWeekday: map[time.Weekday][]*rolls.Roll{},
+				LastRolled:      map[places.ID]time.Time{},
+				ActiveBoosts: map[places.ID]int{
+					places.ID("1"): 1,
+				},
+			},
+		},
+		{
+			name: "one roll",
+			time: today,
+			rolls: []*rolls.Roll{
+				{
+					ID:      rolls.ID("1"),
+					UserID:  users.ID("1"),
+					PlaceID: places.ID("1"),
+					Time:    today,
+				},
+			},
+			canBoost: map[users.ID]error{
+				users.ID("1"): nil,
+				users.ID("2"): nil,
+			},
+			canRoll: map[users.ID]error{
+				users.ID("1"): nil,
+				users.ID("2"): nil,
+			},
+			pointsLeft: map[users.ID]int{
+				users.ID("1"): 1,
+				users.ID("2"): 1,
+			},
+			expected: &rollsHistory{
+				ThisWeekBoosts: []*boosts.Boost{},
+				RollsPerWeekday: map[time.Weekday][]*rolls.Roll{
+					time.Monday: {
+						{
+							ID:      rolls.ID("1"),
+							UserID:  users.ID("1"),
+							PlaceID: places.ID("1"),
+							Time:    today,
+						},
+					},
+				},
+				LastRolled: map[places.ID]time.Time{
+					places.ID("1"): today,
+				},
+				ActiveBoosts: map[places.ID]int{},
+			},
+		},
+		{
+			name: "no nothing",
+			time: today,
+			canBoost: map[users.ID]error{
+				users.ID("1"): nil,
+			},
+			canRoll: map[users.ID]error{
+				users.ID("1"): nil,
+			},
+			pointsLeft: map[users.ID]int{
+				users.ID("1"): 1,
+			},
+			expected: &rollsHistory{
+				ThisWeekBoosts:  []*boosts.Boost{},
+				RollsPerWeekday: map[time.Weekday][]*rolls.Roll{},
+				LastRolled:      map[places.ID]time.Time{},
+				ActiveBoosts:    map[places.ID]int{},
+			},
+		},
 	}
 
-	_, _, firstRollError := roller.Roll(ctx, today)
-	assertNoError(t, firstRollError)
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	_, firstBoostError := roller.Boost(ctx, places[0].ID, today.Add(time.Minute))
-	assertNoError(t, firstBoostError)
+			actual := buildHistory(rollsToMap(tc.rolls...), boostsToMap(tc.boosts...), tc.time)
+			assertEqual(t, tc.expected, actual)
 
-	history, err := roller.buildHistory(ctx, today.Add(2*time.Minute))
-	assertNoError(t, err)
-	assertEqual(t, 1, len(history.ActiveBoosts[places[0].ID]))
+			for uID, expected := range tc.canBoost {
+				assertEqual(t, expected, actual.CanBoost(uID, tc.time))
+			}
 
-	_, anotherBoostError := roller.Boost(testContext(testUser()), places[0].ID, today.Add(time.Minute))
-	assertNoError(t, anotherBoostError)
+			for uID, expected := range tc.canRoll {
+				assertEqual(t, expected, actual.CanRoll(uID, tc.time))
+			}
 
-	history, err = roller.buildHistory(ctx, today.Add(2*time.Minute))
-	assertNoError(t, err)
-	assertEqual(t, 2, len(history.ActiveBoosts[places[0].ID]))
+			for uID, expected := range tc.pointsLeft {
+				assertEqual(t, expected, actual.pointsLeft(uID))
+			}
+		})
+	}
 }
 
-func TestHistory_boost_roll__no_active_boost(t *testing.T) {
-	t.Parallel()
-
-	today := time.Date(2021, time.September, 6, 9, 0, 0, 0, time.UTC) // Monday
-
-	ctx := testContext(testUser())
-	file, err := ioutil.TempFile("", "test-bolt")
-	assertNoError(t, err)
-	bolt, err := store.NewBolt(file.Name())
-	assertNoError(t, err)
-	roller := New(storage_places.NewBolt(bolt), storage_boosts.NewBolt(bolt), storage_rolls.NewBolt(bolt), events.NewRegistry())
-	placeNames := []string{"place1", "place2", "place3"}
-	places := make([]*places.Place, len(placeNames))
-	for i, name := range placeNames {
-		place, err := roller.NewPlace(ctx, name)
-		assertNoError(t, err)
-		places[i] = place
+func rollsToMap(rr ...*rolls.Roll) map[rolls.ID]*rolls.Roll {
+	m := make(map[rolls.ID]*rolls.Roll)
+	for _, r := range rr {
+		m[r.ID] = r
 	}
+	return m
+}
 
-	_, firstBoostError := roller.Boost(ctx, places[0].ID, today)
-	assertNoError(t, firstBoostError)
-
-	_, anotherBoostError := roller.Boost(testContext(testUser()), places[0].ID, today)
-	assertNoError(t, anotherBoostError)
-
-	_, _, firstRollError := roller.Roll(ctx, today.Add(time.Minute))
-	assertNoError(t, firstRollError)
-
-	history, err := roller.buildHistory(ctx, today.Add(2*time.Minute))
-	assertNoError(t, err)
-	assertEqual(t, 0, len(history.ActiveBoosts[places[0].ID]))
+func boostsToMap(bb ...*boosts.Boost) map[boosts.ID]*boosts.Boost {
+	m := map[boosts.ID]*boosts.Boost{}
+	for _, b := range bb {
+		m[b.ID] = b
+	}
+	return m
 }

@@ -150,12 +150,9 @@ func (r *Roller) Boost(ctx context.Context, placeID places.ID, now time.Time) er
 		return fmt.Errorf("failed to list boosts: %w", err)
 	}
 
-	history, err := buildHistory(allRolls, allBoosts, now)
-	if err != nil {
-		return fmt.Errorf("failed to build history: %w", err)
-	}
+	history := buildHistory(allRolls, allBoosts, now)
 
-	if err := history.CanBoost(user, now); err != nil {
+	if err := history.CanBoost(user.ID, now); err != nil {
 		return fmt.Errorf("can't boost any more: %w", err)
 	}
 
@@ -185,12 +182,9 @@ func (r *Roller) Roll(ctx context.Context, now time.Time) (*Roll, error) {
 		return nil, fmt.Errorf("failed to list boosts: %w", err)
 	}
 
-	history, err := buildHistory(allRolls, allBoosts, now)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build history: %w", err)
-	}
+	history := buildHistory(allRolls, allBoosts, now)
 
-	if err := history.CanRoll(user, now); err != nil {
+	if err := history.CanRoll(user.ID, now); err != nil {
 		return nil, fmt.Errorf("failed to validate rules: %w", err)
 	}
 

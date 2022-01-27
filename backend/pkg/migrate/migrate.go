@@ -28,9 +28,6 @@ var (
 )
 
 func Run(ctx context.Context) error {
-	if err := updatePlaces(ctx, storage_places.NewDynamoDB(dynamodbStore, "lunch-production-webapp-places")); err != nil {
-		return err
-	}
 	return nil
 	if err := migrateUsers(
 		ctx,

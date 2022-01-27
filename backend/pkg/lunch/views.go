@@ -119,10 +119,7 @@ func (v *views) Places(ctx context.Context, now time.Time, pp map[places.ID]*pla
 		return nil, fmt.Errorf("failed to list users: %w", err)
 	}
 
-	history, err := buildHistory(allRolls, allBoosts, now)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build history")
-	}
+	history := buildHistory(allRolls, allBoosts, now)
 
 	weights := history.getWeights(pp, now)
 	weightsSum := 0.0

@@ -17,15 +17,15 @@ const (
 )
 
 type rollsHistory struct {
-	ThisWeekBoosts []*boosts.Boost
-	ThisWeekRolls  map[time.Weekday][]*rolls.Roll
-	LastRolled     map[places.ID]time.Time
-	ActiveBoosts   map[places.ID][]*boosts.Boost
+	ThisWeekBoosts  []*boosts.Boost
+	RollsPerWeekday map[time.Weekday][]*rolls.Roll
+	LastRolled      map[places.ID]time.Time
+	ActiveBoosts    map[places.ID]int
 }
 
-func buildHistory(allRolls map[rolls.ID]*rolls.Roll, allBoosts map[boosts.ID]*boosts.Boost, now time.Time) (*rollsHistory, error) {
+func buildHistory(allRolls map[rolls.ID]*rolls.Roll, allBoosts map[boosts.ID]*boosts.Boost, now time.Time) *rollsHistory {
 	year, week := now.ISOWeek()
-	thisWeekRolls := map[time.Weekday][]*rolls.Roll{}
+	rollsPerWeekday := map[time.Weekday][]*rolls.Roll{}
 	lastRolled := map[places.ID]time.Time{}
 	var latestRoll *rolls.Roll
 	for _, roll := range allRolls {
@@ -34,7 +34,7 @@ func buildHistory(allRolls map[rolls.ID]*rolls.Roll, allBoosts map[boosts.ID]*bo
 		sameWeek := rollWeek == week
 		if sameYear && sameWeek {
 			weekday := roll.Time.Weekday()
-			thisWeekRolls[weekday] = append(thisWeekRolls[weekday], roll)
+			rollsPerWeekday[weekday] = append(rollsPerWeekday[weekday], roll)
 		}
 
 		if roll.Time.After(lastRolled[roll.PlaceID]) {
@@ -49,7 +49,7 @@ func buildHistory(allRolls map[rolls.ID]*rolls.Roll, allBoosts map[boosts.ID]*bo
 	}
 
 	thisWeekBoosts := []*boosts.Boost{}
-	activeBoosts := map[places.ID][]*boosts.Boost{}
+	activeBoosts := map[places.ID]int{}
 	for _, boost := range allBoosts {
 		boostYear, boostWeek := boost.Time.ISOWeek()
 		sameYear := boostYear == year
@@ -60,53 +60,53 @@ func buildHistory(allRolls map[rolls.ID]*rolls.Roll, allBoosts map[boosts.ID]*bo
 
 		// boosts lasts until the next roll
 		if latestRoll == nil {
-			activeBoosts[boost.PlaceID] = append(activeBoosts[boost.PlaceID], boost)
+			activeBoosts[boost.PlaceID]++
 		} else if latestRoll.Time.Before(boost.Time) {
-			activeBoosts[boost.PlaceID] = append(activeBoosts[boost.PlaceID], boost)
+			activeBoosts[boost.PlaceID]++
 		}
 	}
 
 	return &rollsHistory{
-		ThisWeekRolls:  thisWeekRolls,
-		ThisWeekBoosts: thisWeekBoosts,
-		LastRolled:     lastRolled,
-		ActiveBoosts:   activeBoosts,
-	}, nil
+		RollsPerWeekday: rollsPerWeekday,
+		ThisWeekBoosts:  thisWeekBoosts,
+		LastRolled:      lastRolled,
+		ActiveBoosts:    activeBoosts,
+	}
 }
 
-func (h *rollsHistory) CanBoost(user *users.User, now time.Time) error {
-	if h.pointsLeft(user) <= 0 {
+func (h *rollsHistory) CanBoost(userID users.ID, now time.Time) error {
+	if h.pointsLeft(userID) <= 0 {
 		return ErrNoPoints
 	}
 
 	return nil
 }
 
-func (h *rollsHistory) CanRoll(user *users.User, now time.Time) error {
-	firstRollToday := len(h.ThisWeekRolls[now.Weekday()]) == 0
+func (h *rollsHistory) CanRoll(userID users.ID, now time.Time) error {
+	firstRollToday := len(h.RollsPerWeekday[now.Weekday()]) == 0
 	if firstRollToday {
 		// anyone can make the first roll a day
 		return nil
 	}
 
-	if h.pointsLeft(user) <= 0 {
+	if h.pointsLeft(userID) <= 0 {
 		return ErrNoPoints
 	}
 
 	return nil
 }
 
-func (h *rollsHistory) pointsLeft(user *users.User) int {
+func (h *rollsHistory) pointsLeft(userID users.ID) int {
 	points := totalPoints
 
 	for _, boost := range h.ThisWeekBoosts {
-		if boost.UserID == user.ID {
+		if boost.UserID == userID {
 			// Boost costs one point
 			points--
 		}
 	}
 
-	for _, rolls := range h.ThisWeekRolls {
+	for _, rolls := range h.RollsPerWeekday {
 		if len(rolls) <= 1 {
 			// first roll a day is always allowed
 			continue
@@ -114,7 +114,7 @@ func (h *rollsHistory) pointsLeft(user *users.User) int {
 
 		for _, roll := range rolls[1:] {
 			// consecutive rolls a day are rerolls, only one reroll per week is allowed
-			if roll.UserID == user.ID {
+			if roll.UserID == userID {
 				points--
 			}
 		}
@@ -144,7 +144,7 @@ func (h *rollsHistory) getWeights(allPlaces map[places.ID]*places.Place, now tim
 			}
 		}
 
-		for range h.ActiveBoosts[place.ID] {
+		for i := 0; i < h.ActiveBoosts[place.ID]; i++ {
 			weights[placeID] *= boostMultiplier
 		}
 	}

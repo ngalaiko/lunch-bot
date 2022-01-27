@@ -9,26 +9,6 @@ import (
 	storage_places "lunch/pkg/lunch/places/storage"
 )
 
-func updatePlaces(ctx context.Context, placesStore *storage_places.DynamoDBStorage) error {
-	toMigrate, err := placesStore.ListAll(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to list names to migrate: %w", err)
-	}
-
-	for _, place := range toMigrate {
-		if place.UserID != "" {
-			continue
-		}
-
-		place.UserID = place.AddedBy.ID
-		if err := placesStore.Update(ctx, place); err != nil {
-			return fmt.Errorf("failed to update place: %w", err)
-		}
-	}
-
-	return nil
-}
-
 func migratePlaces(ctx context.Context, from, to storage_places.Storage) error {
 	log.Printf("[INFO] migrating places")
 
