@@ -23,7 +23,7 @@
   const onLogoutClick = users.logout
 </script>
 
-<nav class="flex flex-1 m-auto p-5 max-w-screen-sm">
+<nav class="flex flex-1 m-auto p-5">
   <Link to="/">
     <Icon class="w-10 h-10" />
   </Link>

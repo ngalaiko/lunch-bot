@@ -1,9 +1,7 @@
 <script lang="ts">
-  import { Auth, Header, Places } from '../../components'
+  import { Page, Places } from '../../components'
 </script>
 
-<Auth>
-  <Header>
-    <Places />
-  </Header>
-</Auth>
+<Page>
+  <Places />
+</Page>

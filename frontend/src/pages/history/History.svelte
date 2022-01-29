@@ -1,10 +1,8 @@
 <script lang="ts">
-  import { Auth, Header } from '../../components'
+  import { Page } from '../../components'
   import { History } from '../../components'
 </script>
 
-<Auth>
-  <Header>
-    <History />
-  </Header>
-</Auth>
+<Page>
+  <History />
+</Page>
