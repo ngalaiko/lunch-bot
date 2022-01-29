@@ -30,6 +30,7 @@ func NewHandler(
 	r.Use(middleware.RequestLogger(&logFormatter{}))
 	r.Use(middleware.CleanPath)
 	r.Use(middleware.Recoverer)
+	r.Use(middleware.Heartbeat("/api/ping"))
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{
 			// development

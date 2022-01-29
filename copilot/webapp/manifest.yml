@@ -8,6 +8,16 @@ type: Load Balanced Web Service
 http:
   path: '/'
   alias: lunch.forfunc.com
+  healthcheck:
+    path: '/api/ping'
+    success_codes: '200'
+    healthy_threshold: 3
+    unhealthy_threshold: 2
+    interval: 15s
+    timeout: 10s
+    grace_period: 1s
+  deregistration_delay: 0s
+  version: 'http1'
 
 image:
   build: Dockerfile
