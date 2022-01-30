@@ -5,7 +5,7 @@
 
 <script lang="ts">
   import { boosts } from '../../api'
-  import { Place, NewPlaceForm } from '../molecules'
+  import { Place, NewPlaceForm, Loading } from '../molecules'
 
   const handleOnBoost = (e: CustomEvent) =>
     boosts.create(e.detail.id).then(places.list).catch(alert)
@@ -29,7 +29,7 @@
 
 <div class="flex flex-col items-center">
   {#await fetching}
-    <p>Loading...</p>
+    <Loading />
   {:then}
     <ul class="flex flex-col items-stretch space-y-2">
       <li><NewPlaceForm on:submit={handleOnSubmit} bind:name={newPlaceName} /></li>

@@ -4,7 +4,7 @@
 </script>
 
 <script lang="ts">
-  import { RollButton, TimeSince } from '../molecules'
+  import { RollButton, TimeSince, Loading } from '../molecules'
 
   $: lastRoll = $rolls.sort((a, b) => b.time.getTime() - a.time.getTime()).at(0)
 
@@ -13,7 +13,7 @@
 
 <div class="flex flex-col items-center">
   {#await fetching}
-    loading...
+    <Loading />
   {:then}
     <div class="flex flex-col items-center m-3">
       {#if lastRoll}

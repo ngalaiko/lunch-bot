@@ -4,15 +4,13 @@
 
 <script lang="ts">
   import { users } from '../../api'
-  import { Login } from '../organisms'
+  import { Login, Loading } from '../organisms'
 </script>
 
-{#await loading}
-  <p>Loading...</p>
-{:then}
+<Loading {loading}>
   {#if $users}
     <slot />
   {:else}
     <Login />
   {/if}
-{/await}
+</Loading>

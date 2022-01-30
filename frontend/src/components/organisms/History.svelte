@@ -6,6 +6,7 @@
 <script lang="ts">
   import type { Place, Boost, Roll } from '../../api'
   import { getWeek, weekday } from '../../lib/time'
+  import { Loading } from '../molecules'
 
   type HistoryItem = Place | Boost | Roll
 
@@ -38,7 +39,7 @@
 
 <div class="flex flex-col">
   {#await fetching}
-    <p>Loading...</p>
+    <Loading />
   {:then}
     {#each Array.from(groupByYear(fullHistory)) as [year, items]}
       {#each Array.from(groupByWeek(items)) as [week, items]}
