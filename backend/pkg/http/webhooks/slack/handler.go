@@ -157,7 +157,7 @@ func (h *Handler) asyncPost(url string, msg *Message) error {
 }
 
 func (h *Handler) handleBoost(ctx context.Context, responseURL string, placeID places.ID) error {
-	err := h.roller.Boost(ctx, placeID, time.Now())
+	err := h.roller.CreateBoost(ctx, placeID, time.Now())
 	switch {
 	case err == nil:
 		responseBlocks, err := h.list(ctx)
@@ -191,7 +191,7 @@ func (h *Handler) handleActions(ctx context.Context, responseURL string, actions
 }
 
 func (h *Handler) handleRoll(ctx context.Context) *Message {
-	roll, err := h.roller.Roll(ctx, time.Now())
+	roll, err := h.roller.CreateRoll(ctx, time.Now())
 	switch {
 	case err == nil:
 		return Ephemeral(
@@ -208,7 +208,7 @@ func (h *Handler) handleRoll(ctx context.Context) *Message {
 }
 
 func (h *Handler) handleAdd(ctx context.Context, placeName string) *Message {
-	if err := h.roller.NewPlace(ctx, placeName); err != nil {
+	if err := h.roller.CreatePlace(ctx, placeName); err != nil {
 		return InternalServerError(err)
 	}
 	return Ephemeral(
@@ -240,13 +240,8 @@ func (h *Handler) handleCommand(ctx context.Context, cmd *CommandRequest) *Messa
 }
 
 func (s *Handler) onBoostCreated(ctx context.Context, boost *lunch.Boost) error {
-	place, err := s.roller.GetPlace(ctx, boost.PlaceID)
-	if err != nil {
-		return fmt.Errorf("failed to get place: %w", err)
-	}
-
-	text := fmt.Sprintf("<@%s> boosted %s", boost.UserID, place.Name)
-	blocks := Section(Markdown("<@%s> boosted *%s*", boost.UserID, place.Name))
+	text := fmt.Sprintf("<@%s> boosted %s", boost.UserID, boost.Place.Name)
+	blocks := Section(Markdown("<@%s> boosted *%s*", boost.UserID, boost.Place.Name))
 
 	users, err := s.usersService.List(ctx)
 	if err != nil {
@@ -297,18 +292,13 @@ func (s *Handler) onPlaceCreated(ctx context.Context, place *lunch.Place) error 
 }
 
 func (s *Handler) onRollCreated(ctx context.Context, roll *lunch.Roll) error {
-	place, err := s.roller.GetPlace(ctx, roll.PlaceID)
-	if err != nil {
-		return fmt.Errorf("failed to get place: %w", err)
-	}
-
 	users, err := s.usersService.List(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list users: %w", err)
 	}
 
-	text := fmt.Sprintf("<@%s> rolled %s", roll.UserID, place.Name)
-	blocks := Section(Markdown("<@%s> rolled *%s*", roll.UserID, place.Name))
+	text := fmt.Sprintf("<@%s> rolled %s", roll.UserID, roll.Place.Name)
+	blocks := Section(Markdown("<@%s> rolled *%s*", roll.UserID, roll.Place.Name))
 
 	wg, ctx := errgroup.WithContext(ctx)
 	for _, user := range users {

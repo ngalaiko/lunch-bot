@@ -1,10 +1,4 @@
-package events
-
-import (
-	"lunch/pkg/lunch/boosts"
-	"lunch/pkg/lunch/places"
-	"lunch/pkg/lunch/rolls"
-)
+package lunch
 
 type Type uint
 
@@ -30,7 +24,7 @@ func (t *Type) String() string {
 
 type event struct {
 	Type  Type
-	Place *places.Place
-	Roll  *rolls.Roll
-	Boost *boosts.Boost
+	Place *Place
+	Roll  *Roll
+	Boost *Boost
 }

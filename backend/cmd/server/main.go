@@ -13,12 +13,11 @@ import (
 	"lunch/pkg/http"
 	"lunch/pkg/jwt"
 	"lunch/pkg/lunch"
-	"lunch/pkg/lunch/events"
 	service_users "lunch/pkg/users/service"
 )
 
 var (
-	roller       = lunch.New(placesStore, boostsStore, rollsStore, events.NewRegistry(), usersStore)
+	roller       = lunch.New(placesStore, boostsStore, rollsStore, usersStore)
 	jwtService   = jwt.NewService(jwtKeysStore)
 	usersService = service_users.New(usersStore)
 )

@@ -159,7 +159,7 @@ func (h *handler) handlePlacesCreate(ctx context.Context, req *request) (*respon
 	if !ok {
 		return &response{ID: req.ID, Error: "'name' parameter must be set"}, nil
 	}
-	if err := h.roller.NewPlace(ctx, name); err != nil {
+	if err := h.roller.CreatePlace(ctx, name); err != nil {
 		return nil, fmt.Errorf("failed to create place: %s", err)
 	}
 	return &response{ID: req.ID}, nil
@@ -171,7 +171,7 @@ func (h *handler) handleBoostsCreate(ctx context.Context, req *request) (*respon
 		return &response{ID: req.ID, Error: "'placeId' parameter must be set"}, nil
 	}
 
-	err := h.roller.Boost(ctx, places.ID(placeID), time.Now())
+	err := h.roller.CreateBoost(ctx, places.ID(placeID), time.Now())
 	switch {
 	case err == nil:
 		return &response{ID: req.ID}, nil
@@ -211,7 +211,7 @@ func (h *handler) handlePlacesList(ctx context.Context, req *request) (*response
 }
 
 func (h *handler) handleRollsCreate(ctx context.Context, req *request) (*response, error) {
-	roll, err := h.roller.Roll(ctx, time.Now())
+	roll, err := h.roller.CreateRoll(ctx, time.Now())
 	switch {
 	case err == nil:
 		return &response{ID: req.ID, Rolls: []*lunch.Roll{roll}}, nil

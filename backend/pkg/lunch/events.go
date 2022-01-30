@@ -1,69 +1,65 @@
-package events
+package lunch
 
 import (
 	"context"
 	"log"
 	"sync"
-
-	"lunch/pkg/lunch/boosts"
-	"lunch/pkg/lunch/places"
-	"lunch/pkg/lunch/rolls"
 )
 
 type handler func(context.Context, *event) error
 
-type Registry struct {
+type registry struct {
 	handlersGuard *sync.RWMutex
 	handlers      map[Type][]handler
 }
 
-func NewRegistry() *Registry {
-	return &Registry{
+func newEventsRegistry() *registry {
+	return &registry{
 		handlersGuard: &sync.RWMutex{},
 		handlers:      make(map[Type][]handler),
 	}
 }
 
-func (r *Registry) PlaceCreated(place *places.Place) {
+func (r *registry) PlaceCreated(place *Place) {
 	r.pub(&event{
 		Type:  TypePlaceCreated,
 		Place: place,
 	})
 }
 
-func (r *Registry) OnPlaceCreated(fn func(context.Context, *places.Place) error) {
+func (r *registry) OnPlaceCreated(fn func(context.Context, *Place) error) {
 	r.sub(func(ctx context.Context, e *event) error {
 		return fn(ctx, e.Place)
 	}, TypePlaceCreated)
 }
 
-func (r *Registry) RollCreated(roll *rolls.Roll) {
+func (r *registry) RollCreated(roll *Roll) {
 	r.pub(&event{
 		Type: TypeRollCreated,
 		Roll: roll,
 	})
 }
 
-func (r *Registry) OnRollCreated(fn func(context.Context, *rolls.Roll) error) {
+func (r *registry) OnRollCreated(fn func(context.Context, *Roll) error) {
 	r.sub(func(ctx context.Context, e *event) error {
 		return fn(ctx, e.Roll)
 	}, TypeRollCreated)
 }
 
-func (r *Registry) BoostCreated(boost *boosts.Boost) {
+func (r *registry) BoostCreated(boost *Boost) {
 	r.pub(&event{
 		Type:  TypeBoostCreated,
 		Boost: boost,
 	})
 }
 
-func (r *Registry) OnBoostCreated(fn func(context.Context, *boosts.Boost) error) {
+func (r *registry) OnBoostCreated(fn func(context.Context, *Boost) error) {
 	r.sub(func(ctx context.Context, e *event) error {
 		return fn(ctx, e.Boost)
 	}, TypeBoostCreated)
 }
 
-func (r *Registry) pub(evt *event) {
+func (r *registry) pub(evt *event) {
 	r.handlersGuard.RLock()
 	handlers := r.handlers[evt.Type]
 	r.handlersGuard.RUnlock()
@@ -81,7 +77,7 @@ func (r *Registry) pub(evt *event) {
 	}
 }
 
-func (r *Registry) sub(fn handler, tt ...Type) {
+func (r *registry) sub(fn handler, tt ...Type) {
 	r.handlersGuard.Lock()
 	for _, t := range tt {
 		r.handlers[t] = append(r.handlers[t], fn)
