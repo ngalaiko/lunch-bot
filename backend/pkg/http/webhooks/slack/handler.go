@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"time"
 
 	"lunch/pkg/lunch"
@@ -121,6 +122,14 @@ func (h *Handler) list(ctx context.Context) ([]*Block, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	sort.Slice(chances, func(i, j int) bool {
+		return chances[i].Name < chances[j].Name
+	})
+
+	sort.SliceStable(chances, func(i, j int) bool {
+		return chances[i].Chance < chances[j].Chance
+	})
 
 	bb := []*Block{
 		Section(nil, Markdown("*Title*"), Markdown("*Odds*")),
