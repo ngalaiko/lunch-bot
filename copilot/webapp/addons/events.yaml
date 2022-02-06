@@ -72,6 +72,10 @@ Resources:
             Action:
               - dynamodb:Query
               - dynamodb:Scan
+              - dynamodb:PartiQLSelect
+              - dynamodb:PartiQLUpdate
+              - dynamodb:PartiQLInsert
+              - dynamodb:PartiQLDelete
             Effect: Allow
             Resource: !Sub ${ events.Arn}/index/*
 
