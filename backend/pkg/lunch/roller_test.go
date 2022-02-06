@@ -10,9 +10,7 @@ import (
 	"testing"
 	"time"
 
-	storage_boosts "lunch/pkg/lunch/boosts/storage"
-	storage_places "lunch/pkg/lunch/places/storage"
-	storage_rolls "lunch/pkg/lunch/rolls/storage"
+	"lunch/pkg/lunch/events"
 	"lunch/pkg/store"
 	"lunch/pkg/users"
 	storage_users "lunch/pkg/users/storage"
@@ -26,7 +24,7 @@ func TestRoll_noPlaces(t *testing.T) {
 	assertNoError(t, err)
 	bolt, err := store.NewBolt(file.Name())
 	assertNoError(t, err)
-	roller := New(storage_places.NewBolt(bolt), storage_boosts.NewBolt(bolt), storage_rolls.NewBolt(bolt), storage_users.NewBolt(bolt))
+	roller := New(events.NewBoltStorage(bolt), storage_users.NewBolt(bolt))
 
 	place, err := roller.CreateRoll(ctx, time.Now())
 	assertError(t, ErrNoPlaces, err)
@@ -45,7 +43,7 @@ func TestRoll_reroll_then_boost(t *testing.T) {
 	assertNoError(t, err)
 	bolt, err := store.NewBolt(file.Name())
 	assertNoError(t, err)
-	roller := New(storage_places.NewBolt(bolt), storage_boosts.NewBolt(bolt), storage_rolls.NewBolt(bolt), storage_users.NewBolt(bolt))
+	roller := New(events.NewBoltStorage(bolt), storage_users.NewBolt(bolt))
 	placeNames := []string{"place1", "place2", "place3"}
 	for _, name := range placeNames {
 		assertNoError(t, roller.CreatePlace(ctx, name))
@@ -79,7 +77,7 @@ func TestRoll_boost_then_reroll(t *testing.T) {
 	assertNoError(t, err)
 	bolt, err := store.NewBolt(file.Name())
 	assertNoError(t, err)
-	roller := New(storage_places.NewBolt(bolt), storage_boosts.NewBolt(bolt), storage_rolls.NewBolt(bolt), storage_users.NewBolt(bolt))
+	roller := New(events.NewBoltStorage(bolt), storage_users.NewBolt(bolt))
 	placeNames := []string{"place1", "place2", "place3"}
 	for _, name := range placeNames {
 		assertNoError(t, roller.CreatePlace(ctx, name))
@@ -141,7 +139,7 @@ func TestRoll_rerolls(t *testing.T) {
 	assertNoError(t, err)
 	bolt, err := store.NewBolt(file.Name())
 	assertNoError(t, err)
-	roller := New(storage_places.NewBolt(bolt), storage_boosts.NewBolt(bolt), storage_rolls.NewBolt(bolt), storage_users.NewBolt(bolt))
+	roller := New(events.NewBoltStorage(bolt), storage_users.NewBolt(bolt))
 
 	placeNames := []string{"place1", "place2", "place3"}
 	for _, name := range placeNames {

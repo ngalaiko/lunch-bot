@@ -31,7 +31,7 @@ func (s *Storage) Create(ctx context.Context, roll *rolls.Roll) error {
 		PlaceID:   roll.PlaceID,
 		RoomID:    roll.RoomID,
 		Type:      rollCreated,
-		Timestamp: time.Now(),
+		Timestamp: events.UnixNanoTime(roll.Time),
 	})
 }
 
@@ -45,7 +45,7 @@ func (s *Storage) Rolls(ctx context.Context, roomID rooms.ID) (map[places.ID]*ro
 		result[event.PlaceID] = &rolls.Roll{
 			UserID:  event.UserID,
 			PlaceID: event.PlaceID,
-			Time:    event.Timestamp,
+			Time:    time.Time(event.Timestamp),
 		}
 	}
 	return result, nil

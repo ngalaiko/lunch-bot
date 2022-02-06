@@ -65,7 +65,6 @@ func Run(ctx context.Context) error {
 		if err := boostsv2.Create(ctx, boost); err != nil {
 			return fmt.Errorf("failed to migrate boost: %w", err)
 		}
-		fmt.Printf("boost.ID: %v\n", boost.ID)
 	}
 
 	rolls, err := rollsv1.ListRolls(ctx)
@@ -77,7 +76,6 @@ func Run(ctx context.Context) error {
 		if err := rollsv2.Create(ctx, roll); err != nil {
 			return fmt.Errorf("failed to migrate roll: %w", err)
 		}
-		fmt.Printf("roll.ID: %v\n", roll.ID)
 	}
 	return nil
 }

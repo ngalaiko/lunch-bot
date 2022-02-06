@@ -4,6 +4,7 @@ import (
 	"lunch/pkg/lunch/boosts"
 	"lunch/pkg/lunch/places"
 	"lunch/pkg/lunch/rolls"
+	"lunch/pkg/lunch/rooms"
 	"lunch/pkg/users"
 )
 
@@ -23,4 +24,10 @@ type Roll struct {
 	*rolls.Roll
 	User  *users.User   `json:"user"`
 	Place *places.Place `json:"place"`
+}
+
+type Room struct {
+	*rooms.Room
+	User    *users.User   `json:"user"`
+	Members []*users.User `json:"members"`
 }

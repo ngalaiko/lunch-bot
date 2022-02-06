@@ -23,7 +23,7 @@ type rollsHistory struct {
 	ActiveBoosts    map[places.ID]int
 }
 
-func buildHistory(allRolls map[rolls.ID]*rolls.Roll, allBoosts map[boosts.ID]*boosts.Boost, now time.Time) *rollsHistory {
+func buildHistory(allRolls map[places.ID]*rolls.Roll, allBoosts map[places.ID]*boosts.Boost, now time.Time) *rollsHistory {
 	year, week := now.ISOWeek()
 	rollsPerWeekday := map[time.Weekday][]*rolls.Roll{}
 	lastRolled := map[places.ID]time.Time{}

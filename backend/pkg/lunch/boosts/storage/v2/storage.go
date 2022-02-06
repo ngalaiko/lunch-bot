@@ -31,7 +31,7 @@ func (s *Storage) Create(ctx context.Context, boost *boosts.Boost) error {
 		PlaceID:   boost.PlaceID,
 		RoomID:    boost.RoomID,
 		Type:      boostCreated,
-		Timestamp: time.Now(),
+		Timestamp: events.UnixNanoTime(boost.Time),
 	})
 }
 
@@ -45,7 +45,7 @@ func (s *Storage) Boosts(ctx context.Context, roomID rooms.ID) (map[places.ID]*b
 		result[event.PlaceID] = &boosts.Boost{
 			UserID:  event.UserID,
 			PlaceID: event.PlaceID,
-			Time:    event.Timestamp,
+			Time:    time.Time(event.Timestamp),
 		}
 	}
 	return result, nil

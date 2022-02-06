@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	roller       = lunch.New(placesStore, boostsStore, rollsStore, usersStore)
+	roller       = lunch.New(eventsStorage, usersStore)
 	jwtService   = jwt.NewService(jwtKeysStore)
 	usersService = service_users.New(usersStore)
 )

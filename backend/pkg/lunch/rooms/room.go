@@ -11,11 +11,11 @@ import (
 type ID string
 
 type Room struct {
-	ID        ID
-	Name      string
-	UserID    users.ID
-	Time      time.Time
-	MemberIDs map[users.ID]bool
+	ID        ID                `json:"id"`
+	Name      string            `json:"name"`
+	UserID    users.ID          `json:"userId"`
+	Time      time.Time         `json:"time"`
+	MemberIDs map[users.ID]bool `json:"memberIds"`
 }
 
 func New(userID users.ID, name string) *Room {

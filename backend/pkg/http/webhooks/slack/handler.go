@@ -20,6 +20,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const roomID = "69c83096-995a-48ce-b843-80a926b0a9ec"
+
 type Handler struct {
 	cfg          *Configuration
 	roller       *lunch.Roller
@@ -115,7 +117,7 @@ func respondJSON(w http.ResponseWriter, body interface{}) error {
 }
 
 func (h *Handler) list(ctx context.Context) ([]*Block, error) {
-	chances, err := h.roller.ListPlaces(ctx, time.Now())
+	chances, err := h.roller.ListPlaces(ctx, roomID, time.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +159,7 @@ func (h *Handler) asyncPost(url string, msg *Message) error {
 }
 
 func (h *Handler) handleBoost(ctx context.Context, responseURL string, placeID places.ID) error {
-	err := h.roller.CreateBoost(ctx, placeID, time.Now())
+	err := h.roller.CreateBoost(ctx, roomID, placeID, time.Now())
 	switch {
 	case err == nil:
 		responseBlocks, err := h.list(ctx)
@@ -191,7 +193,7 @@ func (h *Handler) handleActions(ctx context.Context, responseURL string, actions
 }
 
 func (h *Handler) handleRoll(ctx context.Context) *Message {
-	roll, err := h.roller.CreateRoll(ctx, time.Now())
+	roll, err := h.roller.CreateRoll(ctx, roomID, time.Now())
 	switch {
 	case err == nil:
 		return Ephemeral(
@@ -208,7 +210,7 @@ func (h *Handler) handleRoll(ctx context.Context) *Message {
 }
 
 func (h *Handler) handleAdd(ctx context.Context, placeName string) *Message {
-	if err := h.roller.CreatePlace(ctx, placeName); err != nil {
+	if err := h.roller.CreatePlace(ctx, roomID, placeName); err != nil {
 		return InternalServerError(err)
 	}
 	return Ephemeral(

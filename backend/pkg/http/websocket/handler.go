@@ -21,6 +21,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const roomID = "69c83096-995a-48ce-b843-80a926b0a9ec"
+
 type handler struct {
 	roller *lunch.Roller
 
@@ -44,7 +46,7 @@ func Handler(roller *lunch.Roller) http.Handler {
 }
 
 func (h *handler) onBoostCreated(ctx context.Context, boost *lunch.Boost) error {
-	places, err := h.roller.ListPlaces(ctx, time.Now())
+	places, err := h.roller.ListPlaces(ctx, roomID, time.Now())
 	if err != nil {
 		return fmt.Errorf("failed to list chances: %s", err)
 	}
@@ -52,7 +54,7 @@ func (h *handler) onBoostCreated(ctx context.Context, boost *lunch.Boost) error 
 }
 
 func (h *handler) onPlaceCreated(ctx context.Context, place *lunch.Place) error {
-	places, err := h.roller.ListPlaces(ctx, time.Now())
+	places, err := h.roller.ListPlaces(ctx, roomID, time.Now())
 	if err != nil {
 		return fmt.Errorf("failed to list chances: %s", err)
 	}
@@ -60,7 +62,7 @@ func (h *handler) onPlaceCreated(ctx context.Context, place *lunch.Place) error 
 }
 
 func (h *handler) onRollCreated(ctx context.Context, roll *lunch.Roll) error {
-	pp, err := h.roller.ListPlaces(ctx, time.Now())
+	pp, err := h.roller.ListPlaces(ctx, roomID, time.Now())
 	if err != nil {
 		return fmt.Errorf("failed to list chances: %s", err)
 	}
@@ -159,7 +161,7 @@ func (h *handler) handlePlacesCreate(ctx context.Context, req *request) (*respon
 	if !ok {
 		return &response{ID: req.ID, Error: "'name' parameter must be set"}, nil
 	}
-	if err := h.roller.CreatePlace(ctx, name); err != nil {
+	if err := h.roller.CreatePlace(ctx, roomID, name); err != nil {
 		return nil, fmt.Errorf("failed to create place: %s", err)
 	}
 	return &response{ID: req.ID}, nil
@@ -171,7 +173,7 @@ func (h *handler) handleBoostsCreate(ctx context.Context, req *request) (*respon
 		return &response{ID: req.ID, Error: "'placeId' parameter must be set"}, nil
 	}
 
-	err := h.roller.CreateBoost(ctx, places.ID(placeID), time.Now())
+	err := h.roller.CreateBoost(ctx, roomID, places.ID(placeID), time.Now())
 	switch {
 	case err == nil:
 		return &response{ID: req.ID}, nil
@@ -183,7 +185,7 @@ func (h *handler) handleBoostsCreate(ctx context.Context, req *request) (*respon
 }
 
 func (h *handler) handleBoostsList(ctx context.Context, req *request) (*response, error) {
-	boosts, err := h.roller.ListBoosts(ctx)
+	boosts, err := h.roller.ListBoosts(ctx, roomID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list rolls: %s", err)
 	}
@@ -191,7 +193,7 @@ func (h *handler) handleBoostsList(ctx context.Context, req *request) (*response
 }
 
 func (h *handler) handleRollsList(ctx context.Context, req *request) (*response, error) {
-	rolls, err := h.roller.ListRolls(ctx)
+	rolls, err := h.roller.ListRolls(ctx, roomID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list rolls: %s", err)
 	}
@@ -199,7 +201,7 @@ func (h *handler) handleRollsList(ctx context.Context, req *request) (*response,
 }
 
 func (h *handler) handlePlacesList(ctx context.Context, req *request) (*response, error) {
-	pp, err := h.roller.ListPlaces(ctx, time.Now())
+	pp, err := h.roller.ListPlaces(ctx, roomID, time.Now())
 	switch {
 	case err == nil:
 		return &response{ID: req.ID, Places: pp}, nil
@@ -211,7 +213,7 @@ func (h *handler) handlePlacesList(ctx context.Context, req *request) (*response
 }
 
 func (h *handler) handleRollsCreate(ctx context.Context, req *request) (*response, error) {
-	roll, err := h.roller.CreateRoll(ctx, time.Now())
+	roll, err := h.roller.CreateRoll(ctx, roomID, time.Now())
 	switch {
 	case err == nil:
 		return &response{ID: req.ID, Rolls: []*lunch.Roll{roll}}, nil

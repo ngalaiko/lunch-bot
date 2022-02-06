@@ -316,18 +316,18 @@ func TestHistory(t *testing.T) {
 	}
 }
 
-func rollsToMap(rr ...*rolls.Roll) map[rolls.ID]*rolls.Roll {
-	m := make(map[rolls.ID]*rolls.Roll)
+func rollsToMap(rr ...*rolls.Roll) map[places.ID]*rolls.Roll {
+	m := make(map[places.ID]*rolls.Roll)
 	for _, r := range rr {
-		m[r.ID] = r
+		m[r.PlaceID] = r
 	}
 	return m
 }
 
-func boostsToMap(bb ...*boosts.Boost) map[boosts.ID]*boosts.Boost {
-	m := map[boosts.ID]*boosts.Boost{}
+func boostsToMap(bb ...*boosts.Boost) map[places.ID]*boosts.Boost {
+	m := map[places.ID]*boosts.Boost{}
 	for _, b := range bb {
-		m[b.ID] = b
+		m[b.PlaceID] = b
 	}
 	return m
 }

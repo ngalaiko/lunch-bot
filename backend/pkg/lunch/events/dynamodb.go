@@ -3,6 +3,8 @@ package events
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"lunch/pkg/lunch/rooms"
 	"lunch/pkg/store"
 	"lunch/pkg/users"
@@ -30,7 +32,7 @@ func (d *dynamoDB) Create(ctx context.Context, event *Event) error {
 			'place_id': ?,
 			'name': ?
 		}
-	`, d.tableName), event.UserID, event.RoomID, event.Type, event.Timestamp.UnixNano(), event.PlaceID, event.Name); err != nil {
+	`, d.tableName), event.UserID, event.RoomID, event.Type, time.Time(event.Timestamp).UnixNano(), event.PlaceID, event.Name); err != nil {
 		return fmt.Errorf("failed to insert: %w", err)
 	}
 	return nil
@@ -66,7 +68,7 @@ func (d *dynamoDB) ByRoomID(ctx context.Context, roomID rooms.ID, types ...Type)
 	ee := []*Event{}
 	if err := d.db.Query(ctx, &ee, fmt.Sprintf(`
 		SELECT * FROM "%s"."room_id.timestamp"
-		WHERE 'room_id' = ?
+		WHERE room_id = ?
 	`, d.tableName), roomID); err != nil {
 		return nil, fmt.Errorf("failed to query: %w", err)
 	}

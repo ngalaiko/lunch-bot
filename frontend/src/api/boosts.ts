@@ -8,12 +8,19 @@ import { parseJSON as parseUserJSON } from './users'
 export type Boost = {
   __typename: 'Boost'
 
-  id: string
   time: Date
   userId: string
   user: User
   placeId: string
   place: Place
+}
+
+const isSameBoost = (boost: Boost, other: Boost): boolean => {
+  return (
+    boost.time.getTime() === other.time.getTime() &&
+    boost.placeId === other.placeId &&
+    boost.userId === other.userId
+  )
 }
 
 const store = writable<Boost[]>([])
@@ -22,7 +29,6 @@ const parseJSON = (data: any): Boost => {
   return {
     __typename: 'Boost',
 
-    id: data.id,
     time: new Date(data.time),
     placeId: data.placeId,
     place: parsePlaceJSON(data.place),
@@ -34,7 +40,7 @@ const parseJSON = (data: any): Boost => {
 const storeResponse = (response: any) => {
   response.boosts &&
     response.boosts.map(parseJSON).forEach((boost: Boost) => {
-      store.update(boosts => boosts.filter(b => b.id !== boost.id).concat(boost))
+      store.update(boosts => boosts.filter(b => !isSameBoost(b, boost)).concat(boost))
     })
 }
 

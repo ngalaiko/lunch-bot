@@ -36,7 +36,7 @@ func New(storage events.Storage) *Storage {
 func (s *Storage) Create(ctx context.Context, room *rooms.Room) error {
 	return s.storage.Create(ctx, &events.Event{
 		UserID:    room.UserID,
-		Timestamp: time.Now(),
+		Timestamp: events.UnixNanoTime(room.Time),
 		Type:      roomCreated,
 		RoomID:    rooms.ID(uuid.NewString()),
 		Name:      room.Name,
@@ -46,7 +46,7 @@ func (s *Storage) Create(ctx context.Context, room *rooms.Room) error {
 func (s *Storage) Join(ctx context.Context, user *users.User, roomID rooms.ID) error {
 	return s.storage.Create(ctx, &events.Event{
 		UserID:    user.ID,
-		Timestamp: time.Now(),
+		Timestamp: events.UnixNanoTime(time.Now()),
 		Type:      roomJoined,
 		RoomID:    roomID,
 	})
@@ -55,7 +55,7 @@ func (s *Storage) Join(ctx context.Context, user *users.User, roomID rooms.ID) e
 func (s *Storage) Leave(ctx context.Context, user *users.User, roomID rooms.ID) error {
 	return s.storage.Create(ctx, &events.Event{
 		UserID:    user.ID,
-		Timestamp: time.Now(),
+		Timestamp: events.UnixNanoTime(time.Now()),
 		Type:      roomLeft,
 		RoomID:    roomID,
 	})
@@ -72,7 +72,7 @@ func (s *Storage) Room(ctx context.Context, roomID rooms.ID) (*rooms.Room, error
 	}
 
 	sort.Slice(events, func(i, j int) bool {
-		return events[i].Timestamp.Before(events[j].Timestamp)
+		return time.Time(events[i].Timestamp).Before(time.Time(events[j].Timestamp))
 	})
 
 	memberIDs := make(map[users.ID]bool)
@@ -91,7 +91,7 @@ func (s *Storage) Room(ctx context.Context, roomID rooms.ID) (*rooms.Room, error
 		ID:        roomID,
 		Name:      events[0].Name,
 		UserID:    events[0].UserID,
-		Time:      events[0].Timestamp,
+		Time:      time.Time(events[0].Timestamp),
 		MemberIDs: memberIDs,
 	}, nil
 }
@@ -102,7 +102,7 @@ func (s *Storage) Rooms(ctx context.Context, userID users.ID) (map[rooms.ID]bool
 		return nil, fmt.Errorf("failed to get events: %w", err)
 	}
 	sort.Slice(events, func(i, j int) bool {
-		return events[i].Timestamp.Before(events[j].Timestamp)
+		return time.Time(events[i].Timestamp).Before(time.Time(events[j].Timestamp))
 	})
 	result := make(map[rooms.ID]bool)
 	for _, event := range events {

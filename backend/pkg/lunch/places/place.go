@@ -16,15 +16,15 @@ type Place struct {
 	Name   string    `dynamodbav:"name" json:"name"`
 	Time   time.Time `dynamodbav:"added_at,unixtime" json:"time"`
 	UserID users.ID  `dynamodbav:"user_id" json:"userId"`
-	RoomID rooms.ID  `dynamodbav:"room_id" json:"roomId"`
+	RoomID rooms.ID  `json:"roomId"`
 }
 
-func NewPlace( /*roomID rooms.ID,*/ userID users.ID, name string) *Place {
+func NewPlace(roomID rooms.ID, userID users.ID, name string) *Place {
 	return &Place{
 		ID:     ID(uuid.NewString()),
 		Name:   name,
 		Time:   time.Now(),
 		UserID: userID,
-		// RoomID: roomID,
+		RoomID: roomID,
 	}
 }

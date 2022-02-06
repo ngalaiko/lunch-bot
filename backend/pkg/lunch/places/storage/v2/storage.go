@@ -7,8 +7,6 @@ import (
 	"lunch/pkg/lunch/places"
 	"lunch/pkg/lunch/rooms"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 var (
@@ -33,9 +31,9 @@ func (s *Storage) Create(ctx context.Context, place *places.Place) error {
 	return s.storage.Create(ctx, &events.Event{
 		UserID:    place.UserID,
 		RoomID:    place.RoomID,
-		Timestamp: time.Now(),
+		Timestamp: events.UnixNanoTime(place.Time),
 		Type:      placeCreated,
-		PlaceID:   places.ID(uuid.NewString()),
+		PlaceID:   place.ID,
 		Name:      place.Name,
 	})
 }
@@ -53,7 +51,7 @@ func (s *Storage) Place(ctx context.Context, roomID rooms.ID, placeID places.ID)
 			ID:     event.PlaceID,
 			Name:   event.Name,
 			UserID: event.UserID,
-			Time:   event.Timestamp,
+			Time:   time.Time(event.Timestamp),
 			RoomID: event.RoomID,
 		}, nil
 	}
@@ -71,10 +69,9 @@ func (s *Storage) Places(ctx context.Context, roomID rooms.ID) (map[places.ID]*p
 			ID:     event.PlaceID,
 			Name:   event.Name,
 			UserID: event.UserID,
-			Time:   event.Timestamp,
+			Time:   time.Time(event.Timestamp),
 			RoomID: event.RoomID,
 		}
 	}
 	return result, nil
-
 }

@@ -8,7 +8,6 @@ import { parseJSON as parseUserJSON } from './users'
 export type Roll = {
   __typename: 'Roll'
 
-  id: string
   placeId: string
   userId: string
   user: User
@@ -16,12 +15,14 @@ export type Roll = {
   place: Place
 }
 
+const sameRoll = (a: Roll, b: Roll): boolean =>
+  a.placeId === b.placeId && a.userId === b.userId
+
 const store = writable<Roll[]>([])
 
 const parseJSON = (data: any): Roll => {
   return {
     __typename: 'Roll',
-    id: data.id,
     placeId: data.placeId,
     time: new Date(data.time),
     userId: data.userId,
@@ -35,7 +36,7 @@ const storeResponse = (response: any) => {
     response.rolls.map(parseJSON).forEach((roll: Roll) =>
       store.update(rolls =>
         rolls
-          .filter(r => r.id !== roll.id)
+          .filter(r => !sameRoll(r, roll))
           .concat(roll)
           .sort((a, b) => b.time.getTime() - a.time.getTime())
       )
