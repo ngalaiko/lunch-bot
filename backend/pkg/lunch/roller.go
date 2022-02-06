@@ -54,7 +54,7 @@ func (r *Roller) CreatePlace(ctx context.Context, name string) error {
 		return fmt.Errorf("expected to find who in the context")
 	}
 
-	place := places.NewPlace(places.Name(name), user)
+	place := places.NewPlace(user.ID, name)
 	if err := r.placesStore.Store(ctx, place); err != nil {
 		return fmt.Errorf("failed to store place: %w", err)
 	}
@@ -202,7 +202,7 @@ func (r *Roller) CreateBoost(ctx context.Context, placeID places.ID, now time.Ti
 		return fmt.Errorf("can't boost any more: %w", err)
 	}
 
-	boost := boosts.NewBoost(user, placeID, now)
+	boost := boosts.NewBoost(user.ID, placeID, now)
 	if err := r.boostsStore.Store(ctx, boost); err != nil {
 		return fmt.Errorf("failed to store boost: %w", err)
 	}
@@ -242,7 +242,7 @@ func (r *Roller) CreateRoll(ctx context.Context, now time.Time) (*Roll, error) {
 		return nil, fmt.Errorf("failed to pick random place: %w", err)
 	}
 
-	roll := rolls.NewRoll(user, place.ID, now)
+	roll := rolls.NewRoll(user.ID, place.ID, now)
 	if err := r.rollsStore.Store(ctx, roll); err != nil {
 		return nil, fmt.Errorf("failed to store roll result: %w", err)
 	}

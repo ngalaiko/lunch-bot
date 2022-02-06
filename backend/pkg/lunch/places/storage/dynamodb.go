@@ -31,7 +31,7 @@ func (s *DynamoDBStorage) Store(ctx context.Context, place *places.Place) error 
 				'added_at': ?,
 				'user_id': ?
 			}
-	`, s.tableName), place.ID, place.Name, place.AddedAt.Unix(), place.UserID); err != nil {
+	`, s.tableName), place.ID, place.Name, place.Time.Unix(), place.UserID); err != nil {
 		return fmt.Errorf("failed to insert: %w", err)
 	}
 	return nil
@@ -50,7 +50,7 @@ func (s *DynamoDBStorage) Update(ctx context.Context, place *places.Place) error
 		UPDATE "%s"
 			SET user_id = ?
 		WHERE id = ? AND added_at = ?
-	`, s.tableName), place.UserID, place.ID, place.AddedAt.Unix()); err != nil {
+	`, s.tableName), place.UserID, place.ID, place.Time.Unix()); err != nil {
 		return fmt.Errorf("failed to update: %w", err)
 	}
 	return nil

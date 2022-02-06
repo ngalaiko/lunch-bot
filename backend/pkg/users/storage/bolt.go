@@ -39,7 +39,7 @@ func (s *bolt) Get(ctx context.Context, id users.ID) (*users.User, error) {
 
 func (s *bolt) List(ctx context.Context) (map[users.ID]*users.User, error) {
 	uu := []*users.User{}
-	if _, err := s.db.List(ctx, s.bucketName, &uu, 100, nil); err != nil {
+	if err := s.db.List(ctx, s.bucketName, &uu); err != nil {
 		return nil, fmt.Errorf("failed to list users: %w", err)
 	}
 	m := make(map[users.ID]*users.User, len(uu))

@@ -34,7 +34,7 @@ func (s *BoltDBStorage) GetByID(ctx context.Context, id places.ID) (*places.Plac
 
 func (s *BoltDBStorage) ListAll(ctx context.Context) (map[places.ID]*places.Place, error) {
 	pp := []*places.Place{}
-	if _, err := s.db.List(ctx, s.bucketName, &pp, 100, nil); err != nil {
+	if err := s.db.List(ctx, s.bucketName, &pp); err != nil {
 		return nil, fmt.Errorf("failed to list places: %w", err)
 	}
 	m := make(map[places.ID]*places.Place)

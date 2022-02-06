@@ -3,27 +3,28 @@ package places
 import (
 	"time"
 
+	"lunch/pkg/lunch/rooms"
 	"lunch/pkg/users"
 
 	"github.com/google/uuid"
 )
 
-type Name string
-
 type ID string
 
 type Place struct {
-	ID      ID        `dynamodbav:"id" json:"id"`
-	Name    Name      `dynamodbav:"name" json:"name"`
-	AddedAt time.Time `dynamodbav:"added_at,unixtime" json:"time"`
-	UserID  users.ID  `dynamodbav:"user_id" json:"userId"`
+	ID     ID        `dynamodbav:"id" json:"id"`
+	Name   string    `dynamodbav:"name" json:"name"`
+	Time   time.Time `dynamodbav:"added_at,unixtime" json:"time"`
+	UserID users.ID  `dynamodbav:"user_id" json:"userId"`
+	RoomID rooms.ID  `dynamodbav:"room_id" json:"roomId"`
 }
 
-func NewPlace(name Name, user *users.User) *Place {
+func NewPlace( /*roomID rooms.ID,*/ userID users.ID, name string) *Place {
 	return &Place{
-		ID:      ID(uuid.NewString()),
-		Name:    name,
-		AddedAt: time.Now(),
-		UserID:  user.ID,
+		ID:     ID(uuid.NewString()),
+		Name:   name,
+		Time:   time.Now(),
+		UserID: userID,
+		// RoomID: roomID,
 	}
 }

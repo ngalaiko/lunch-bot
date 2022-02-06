@@ -26,7 +26,7 @@ func (s *BoltDBStorage) Store(ctx context.Context, boost *rolls.Roll) error {
 
 func (s *BoltDBStorage) ListRolls(ctx context.Context) (map[rolls.ID]*rolls.Roll, error) {
 	var rr = []*rolls.Roll{}
-	if _, err := s.db.List(ctx, s.bucketName, &rr, 100, nil); err != nil {
+	if err := s.db.List(ctx, s.bucketName, &rr); err != nil {
 		return nil, fmt.Errorf("failed to list rolls: %w", err)
 	}
 	m := make(map[rolls.ID]*rolls.Roll, len(rr))

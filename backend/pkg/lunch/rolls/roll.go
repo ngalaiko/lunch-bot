@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"lunch/pkg/lunch/places"
+	"lunch/pkg/lunch/rooms"
 	"lunch/pkg/users"
 
 	"github.com/google/uuid"
@@ -16,12 +17,14 @@ type Roll struct {
 	UserID  users.ID  `dynamodbav:"user_id" json:"userId"`
 	PlaceID places.ID `dynamodbav:"place_id" json:"placeId"`
 	Time    time.Time `dynamodbav:"time,unixtime" json:"time"`
+	RoomID  rooms.ID
 }
 
-func NewRoll(user *users.User, placeID places.ID, now time.Time) *Roll {
+func NewRoll(userID users.ID /* roomID rooms.ID,*/, placeID places.ID, now time.Time) *Roll {
 	return &Roll{
-		ID:      ID(uuid.NewString()),
-		UserID:  user.ID,
+		ID:     ID(uuid.NewString()),
+		UserID: userID,
+		// RoomID:  roomID,
 		PlaceID: placeID,
 		Time:    now,
 	}

@@ -72,17 +72,17 @@ func (b *Bolt) Get(ctx context.Context, bucket, key string, dest interface{}) er
 	})
 }
 
-func (b *Bolt) List(ctx context.Context, bucket string, dest interface{}, limit int, from *string) (last *string, err error) {
+func (b *Bolt) List(ctx context.Context, bucket string, dest interface{}) (err error) {
 	// make sure that the dest is a pointer
 	destValuePtr := reflect.ValueOf(dest)
 	if destValuePtr.Kind() != reflect.Ptr {
-		return nil, fmt.Errorf("dest must be a pointer")
+		return fmt.Errorf("dest must be a pointer")
 	}
 
 	// make sure that the dest is a pointer to a slice or an array, so that we can append to it
 	destValue := destValuePtr.Elem()
 	if destValue.Kind() != reflect.Slice && destValue.Kind() != reflect.Array {
-		return nil, fmt.Errorf("dest must be a pointer to an array or a slice")
+		return fmt.Errorf("dest must be a pointer to an array or a slice")
 	}
 
 	// get the type of the slice or array element
@@ -92,7 +92,7 @@ func (b *Bolt) List(ctx context.Context, bucket string, dest interface{}, limit 
 		elemValueType = elemValueType.Elem()
 	}
 	if elemValueType.Kind() == reflect.Ptr {
-		return nil, fmt.Errorf("dest value can obly have one level of indirection")
+		return fmt.Errorf("dest value can obly have one level of indirection")
 	}
 
 	err = b.db.View(func(tx *bolt.Tx) error {
@@ -102,17 +102,8 @@ func (b *Bolt) List(ctx context.Context, bucket string, dest interface{}, limit 
 		}
 
 		c := b.Cursor()
-		var k, v []byte
-		if from == nil {
-			k, v = c.First()
-		} else {
-			k, v = c.Seek([]byte(*from))
-		}
-
-		for i := 0; k != nil && i < limit; k, v = c.Next() {
-			kString := string(k)
-			last = &kString
-
+		k, v := c.First()
+		for i := 0; k != nil; k, v = c.Next() {
 			// initialize an empty array element, and get a pointer to it
 			destElemValue := reflect.Zero(elemValueType)
 			destElemValuePtr := reflect.New(elemValueType)
