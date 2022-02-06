@@ -7,7 +7,6 @@ import (
 
 	"lunch/pkg/lunch/boosts"
 	"lunch/pkg/lunch/events"
-	"lunch/pkg/lunch/places"
 	"lunch/pkg/lunch/rooms"
 )
 
@@ -35,18 +34,18 @@ func (s *Storage) Create(ctx context.Context, boost *boosts.Boost) error {
 	})
 }
 
-func (s *Storage) Boosts(ctx context.Context, roomID rooms.ID) (map[places.ID]*boosts.Boost, error) {
+func (s *Storage) Boosts(ctx context.Context, roomID rooms.ID) ([]*boosts.Boost, error) {
 	events, err := s.eventsStorage.ByRoomID(ctx, roomID, boostCreated)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get events: %w", err)
 	}
-	result := make(map[places.ID]*boosts.Boost)
+	result := make([]*boosts.Boost, 0, len(events))
 	for _, event := range events {
-		result[event.PlaceID] = &boosts.Boost{
+		result = append(result, &boosts.Boost{
 			UserID:  event.UserID,
 			PlaceID: event.PlaceID,
 			Time:    time.Time(event.Timestamp),
-		}
+		})
 	}
 	return result, nil
 }

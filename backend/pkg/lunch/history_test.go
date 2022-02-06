@@ -30,7 +30,6 @@ func TestHistory(t *testing.T) {
 			time: today.Add(time.Hour),
 			rolls: []*rolls.Roll{
 				{
-					ID:      rolls.ID("1"),
 					UserID:  users.ID("1"),
 					PlaceID: places.ID("1"),
 					Time:    today.Add(time.Minute),
@@ -38,7 +37,6 @@ func TestHistory(t *testing.T) {
 			},
 			boosts: []*boosts.Boost{
 				{
-					ID:      boosts.ID("1"),
 					UserID:  users.ID("1"),
 					PlaceID: places.ID("1"),
 					Time:    today,
@@ -59,7 +57,6 @@ func TestHistory(t *testing.T) {
 			expected: &rollsHistory{
 				ThisWeekBoosts: []*boosts.Boost{
 					{
-						ID:      boosts.ID("1"),
 						UserID:  users.ID("1"),
 						PlaceID: places.ID("1"),
 						Time:    today,
@@ -68,7 +65,6 @@ func TestHistory(t *testing.T) {
 				RollsPerWeekday: map[time.Weekday][]*rolls.Roll{
 					time.Monday: {
 						{
-							ID:      rolls.ID("1"),
 							UserID:  users.ID("1"),
 							PlaceID: places.ID("1"),
 							Time:    today.Add(time.Minute),
@@ -86,7 +82,6 @@ func TestHistory(t *testing.T) {
 			time: today.Add(time.Hour),
 			rolls: []*rolls.Roll{
 				{
-					ID:      rolls.ID("1"),
 					UserID:  users.ID("1"),
 					PlaceID: places.ID("1"),
 					Time:    today,
@@ -94,7 +89,6 @@ func TestHistory(t *testing.T) {
 			},
 			boosts: []*boosts.Boost{
 				{
-					ID:      boosts.ID("1"),
 					UserID:  users.ID("1"),
 					PlaceID: places.ID("1"),
 					Time:    today.Add(time.Minute),
@@ -115,7 +109,6 @@ func TestHistory(t *testing.T) {
 			expected: &rollsHistory{
 				ThisWeekBoosts: []*boosts.Boost{
 					{
-						ID:      boosts.ID("1"),
 						UserID:  users.ID("1"),
 						PlaceID: places.ID("1"),
 						Time:    today.Add(time.Minute),
@@ -124,7 +117,6 @@ func TestHistory(t *testing.T) {
 				RollsPerWeekday: map[time.Weekday][]*rolls.Roll{
 					time.Monday: {
 						{
-							ID:      rolls.ID("1"),
 							UserID:  users.ID("1"),
 							PlaceID: places.ID("1"),
 							Time:    today,
@@ -144,13 +136,11 @@ func TestHistory(t *testing.T) {
 			time: today.Add(2 * time.Hour),
 			rolls: []*rolls.Roll{
 				{
-					ID:      rolls.ID("1"),
 					UserID:  users.ID("1"),
 					PlaceID: places.ID("1"),
 					Time:    today,
 				},
 				{
-					ID:      rolls.ID("2"),
 					UserID:  users.ID("1"),
 					PlaceID: places.ID("1"),
 					Time:    today.Add(time.Hour),
@@ -173,13 +163,11 @@ func TestHistory(t *testing.T) {
 				RollsPerWeekday: map[time.Weekday][]*rolls.Roll{
 					time.Monday: {
 						{
-							ID:      rolls.ID("1"),
 							UserID:  users.ID("1"),
 							PlaceID: places.ID("1"),
 							Time:    today,
 						},
 						{
-							ID:      rolls.ID("2"),
 							UserID:  users.ID("1"),
 							PlaceID: places.ID("1"),
 							Time:    today.Add(time.Hour),
@@ -197,7 +185,6 @@ func TestHistory(t *testing.T) {
 			time: today,
 			boosts: []*boosts.Boost{
 				{
-					ID:      boosts.ID("1"),
 					UserID:  users.ID("1"),
 					PlaceID: places.ID("1"),
 					Time:    today,
@@ -218,7 +205,6 @@ func TestHistory(t *testing.T) {
 			expected: &rollsHistory{
 				ThisWeekBoosts: []*boosts.Boost{
 					{
-						ID:      boosts.ID("1"),
 						UserID:  users.ID("1"),
 						PlaceID: places.ID("1"),
 						Time:    today,
@@ -236,7 +222,6 @@ func TestHistory(t *testing.T) {
 			time: today,
 			rolls: []*rolls.Roll{
 				{
-					ID:      rolls.ID("1"),
 					UserID:  users.ID("1"),
 					PlaceID: places.ID("1"),
 					Time:    today,
@@ -259,7 +244,6 @@ func TestHistory(t *testing.T) {
 				RollsPerWeekday: map[time.Weekday][]*rolls.Roll{
 					time.Monday: {
 						{
-							ID:      rolls.ID("1"),
 							UserID:  users.ID("1"),
 							PlaceID: places.ID("1"),
 							Time:    today,
@@ -298,7 +282,7 @@ func TestHistory(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			actual := buildHistory(rollsToMap(tc.rolls...), boostsToMap(tc.boosts...), tc.time)
+			actual := buildHistory(tc.rolls, tc.boosts, tc.time)
 			assertEqual(t, tc.expected, actual)
 
 			for uID, expected := range tc.canBoost {
@@ -314,20 +298,4 @@ func TestHistory(t *testing.T) {
 			}
 		})
 	}
-}
-
-func rollsToMap(rr ...*rolls.Roll) map[places.ID]*rolls.Roll {
-	m := make(map[places.ID]*rolls.Roll)
-	for _, r := range rr {
-		m[r.PlaceID] = r
-	}
-	return m
-}
-
-func boostsToMap(bb ...*boosts.Boost) map[places.ID]*boosts.Boost {
-	m := map[places.ID]*boosts.Boost{}
-	for _, b := range bb {
-		m[b.PlaceID] = b
-	}
-	return m
 }

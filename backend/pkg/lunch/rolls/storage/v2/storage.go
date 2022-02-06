@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"lunch/pkg/lunch/events"
-	"lunch/pkg/lunch/places"
 	"lunch/pkg/lunch/rolls"
 	"lunch/pkg/lunch/rooms"
 )
@@ -35,18 +34,18 @@ func (s *Storage) Create(ctx context.Context, roll *rolls.Roll) error {
 	})
 }
 
-func (s *Storage) Rolls(ctx context.Context, roomID rooms.ID) (map[places.ID]*rolls.Roll, error) {
+func (s *Storage) Rolls(ctx context.Context, roomID rooms.ID) ([]*rolls.Roll, error) {
 	events, err := s.eventsStorage.ByRoomID(ctx, roomID, rollCreated)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get events: %w", err)
 	}
-	result := make(map[places.ID]*rolls.Roll)
+	result := make([]*rolls.Roll, 0, len(events))
 	for _, event := range events {
-		result[event.PlaceID] = &rolls.Roll{
+		result = append(result, &rolls.Roll{
 			UserID:  event.UserID,
 			PlaceID: event.PlaceID,
 			Time:    time.Time(event.Timestamp),
-		}
+		})
 	}
 	return result, nil
 }

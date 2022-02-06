@@ -11,10 +11,13 @@ import (
 	"time"
 
 	"lunch/pkg/lunch/events"
+	"lunch/pkg/lunch/rooms"
 	"lunch/pkg/store"
 	"lunch/pkg/users"
 	storage_users "lunch/pkg/users/storage"
 )
+
+const roomID rooms.ID = "room-id"
 
 func TestRoll_noPlaces(t *testing.T) {
 	t.Parallel()
@@ -26,7 +29,7 @@ func TestRoll_noPlaces(t *testing.T) {
 	assertNoError(t, err)
 	roller := New(events.NewBoltStorage(bolt), storage_users.NewBolt(bolt))
 
-	place, err := roller.CreateRoll(ctx, time.Now())
+	place, err := roller.CreateRoll(ctx, roomID, time.Now())
 	assertError(t, ErrNoPlaces, err)
 	assertNil(t, place)
 }
@@ -46,22 +49,22 @@ func TestRoll_reroll_then_boost(t *testing.T) {
 	roller := New(events.NewBoltStorage(bolt), storage_users.NewBolt(bolt))
 	placeNames := []string{"place1", "place2", "place3"}
 	for _, name := range placeNames {
-		assertNoError(t, roller.CreatePlace(ctx, name))
+		assertNoError(t, roller.CreatePlace(ctx, roomID, name))
 	}
 
-	places, err := roller.ListPlaces(ctx, today)
+	places, err := roller.ListPlaces(ctx, roomID, today)
 	assertNoError(t, err)
 
-	_, firstRollError := roller.CreateRoll(ctx, today)
+	_, firstRollError := roller.CreateRoll(ctx, roomID, today)
 	assertNoError(t, firstRollError)
 
-	_, firstRerollError := roller.CreateRoll(ctx, today.Add(1*time.Minute))
+	_, firstRerollError := roller.CreateRoll(ctx, roomID, today.Add(1*time.Minute))
 	assertNoError(t, firstRerollError)
 
-	firstBoostError := roller.CreateBoost(ctx, places[0].ID, today.Add(2*time.Minute))
+	firstBoostError := roller.CreateBoost(ctx, roomID, places[0].ID, today.Add(2*time.Minute))
 	assertError(t, ErrNoPoints, firstBoostError)
 
-	nextWeekBoostError := roller.CreateBoost(ctx, places[0].ID, today.Add(oneWeek))
+	nextWeekBoostError := roller.CreateBoost(ctx, roomID, places[0].ID, today.Add(oneWeek))
 	assertNoError(t, nextWeekBoostError)
 }
 
@@ -80,25 +83,25 @@ func TestRoll_boost_then_reroll(t *testing.T) {
 	roller := New(events.NewBoltStorage(bolt), storage_users.NewBolt(bolt))
 	placeNames := []string{"place1", "place2", "place3"}
 	for _, name := range placeNames {
-		assertNoError(t, roller.CreatePlace(ctx, name))
+		assertNoError(t, roller.CreatePlace(ctx, roomID, name))
 	}
 
-	places, err := roller.ListPlaces(ctx, today)
+	places, err := roller.ListPlaces(ctx, roomID, today)
 	assertNoError(t, err)
 
-	_, firstRollError := roller.CreateRoll(ctx, today)
+	_, firstRollError := roller.CreateRoll(ctx, roomID, today)
 	assertNoError(t, firstRollError)
 
-	firstBoostError := roller.CreateBoost(ctx, places[0].ID, today.Add(1*time.Minute))
+	firstBoostError := roller.CreateBoost(ctx, roomID, places[0].ID, today.Add(1*time.Minute))
 	assertNoError(t, firstBoostError)
 
-	secondBoostError := roller.CreateBoost(ctx, places[0].ID, today.Add(2*time.Minute))
+	secondBoostError := roller.CreateBoost(ctx, roomID, places[0].ID, today.Add(2*time.Minute))
 	assertError(t, ErrNoPoints, secondBoostError)
 
-	_, firstRerollError := roller.CreateRoll(ctx, today)
+	_, firstRerollError := roller.CreateRoll(ctx, roomID, today)
 	assertError(t, ErrNoPoints, firstRerollError)
 
-	nextWeekBoostError := roller.CreateBoost(ctx, places[0].ID, today.Add(oneWeek))
+	nextWeekBoostError := roller.CreateBoost(ctx, roomID, places[0].ID, today.Add(oneWeek))
 	assertNoError(t, nextWeekBoostError)
 }
 
@@ -143,12 +146,12 @@ func TestRoll_rerolls(t *testing.T) {
 
 	placeNames := []string{"place1", "place2", "place3"}
 	for _, name := range placeNames {
-		assertNoError(t, roller.CreatePlace(ctx, name))
+		assertNoError(t, roller.CreatePlace(ctx, roomID, name))
 	}
 
 	for _, expected := range rolls {
 		t.Run(expected.Description, func(t *testing.T) {
-			roll, err := roller.CreateRoll(testContext(expected.By), expected.When)
+			roll, err := roller.CreateRoll(testContext(expected.By), roomID, expected.When)
 			if expected.Error != nil {
 				assertError(t, expected.Error, err)
 				assertNil(t, roll)

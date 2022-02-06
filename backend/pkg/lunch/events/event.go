@@ -1,6 +1,7 @@
 package events
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -38,6 +39,14 @@ func (e *UnixNanoTime) UnmarshalDynamoDBAttributeValue(av types.AttributeValue) 
 
 	*e = UnixNanoTime(t)
 	return nil
+}
+
+func (r UnixNanoTime) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Time(r))
+}
+
+func (r *UnixNanoTime) UnmarshalJSON(b []byte) error {
+	return json.Unmarshal(b, (*time.Time)(r))
 }
 
 func decodeUnixNanoTime(n string) (time.Time, error) {

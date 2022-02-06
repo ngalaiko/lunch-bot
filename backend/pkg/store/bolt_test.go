@@ -23,7 +23,7 @@ func TestListWithValues(t *testing.T) {
 	assertNoError(t, bolt.Put(context.Background(), "bucket", "key", v))
 
 	var dest []value
-	_, err = bolt.List(context.Background(), "bucket", &dest, 100, nil)
+	err = bolt.List(context.Background(), "bucket", &dest)
 	assertNoError(t, err)
 
 	t.Log(dest)
@@ -44,7 +44,7 @@ func TestListWithPtr(t *testing.T) {
 	assertNoError(t, bolt.Put(context.Background(), "bucket", "key", v))
 
 	var dest []*value
-	_, err = bolt.List(context.Background(), "bucket", &dest, 100, nil)
+	err = bolt.List(context.Background(), "bucket", &dest)
 	assertNoError(t, err)
 
 	t.Log(dest)
