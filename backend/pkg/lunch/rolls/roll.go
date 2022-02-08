@@ -8,10 +8,7 @@ import (
 	"lunch/pkg/users"
 )
 
-type ID string
-
 type Roll struct {
-	ID      ID        `dynamodbav:"id" json:"id"`
 	UserID  users.ID  `dynamodbav:"user_id" json:"userId"`
 	PlaceID places.ID `dynamodbav:"place_id" json:"placeId"`
 	Time    time.Time `dynamodbav:"time,unixtime" json:"time"`
