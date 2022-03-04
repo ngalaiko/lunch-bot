@@ -73,9 +73,6 @@ func (s *Storage) Places(ctx context.Context, roomID rooms.ID) (map[places.ID]*p
 	})
 	result := make(map[places.ID]*places.Place)
 	for _, event := range events {
-
-		fmt.Printf("\nnikitag: %+v\n\n", event)
-
 		switch event.Type {
 		case placeCreated:
 			result[event.PlaceID] = &places.Place{
