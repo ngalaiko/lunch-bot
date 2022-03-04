@@ -6,6 +6,8 @@ import (
 	"lunch/pkg/lunch/events"
 	"lunch/pkg/lunch/places"
 	"lunch/pkg/lunch/rooms"
+	"lunch/pkg/users"
+	"sort"
 	"time"
 )
 
@@ -15,6 +17,7 @@ var (
 
 const (
 	placeCreated events.Type = "places/created"
+	placeDeleted events.Type = "places/deleted"
 )
 
 type Storage struct {
@@ -25,6 +28,16 @@ func New(storage events.Storage) *Storage {
 	return &Storage{
 		storage: storage,
 	}
+}
+
+func (s *Storage) Delete(ctx context.Context, userID users.ID, place *places.Place) error {
+	return s.storage.Create(ctx, &events.Event{
+		UserID:    userID,
+		RoomID:    place.RoomID,
+		Timestamp: events.UnixNanoTime(time.Now()),
+		Type:      placeDeleted,
+		PlaceID:   place.ID,
+	})
 }
 
 func (s *Storage) Create(ctx context.Context, place *places.Place) error {
@@ -39,38 +52,41 @@ func (s *Storage) Create(ctx context.Context, place *places.Place) error {
 }
 
 func (s *Storage) Place(ctx context.Context, roomID rooms.ID, placeID places.ID) (*places.Place, error) {
-	events, err := s.storage.ByRoomID(ctx, roomID, placeCreated)
+	places, err := s.Places(ctx, roomID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get events: %w", err)
+		return nil, fmt.Errorf("failed to get places: %w", err)
 	}
-	for _, event := range events {
-		if event.PlaceID != placeID {
-			continue
-		}
-		return &places.Place{
-			ID:     event.PlaceID,
-			Name:   event.Name,
-			UserID: event.UserID,
-			Time:   time.Time(event.Timestamp),
-			RoomID: event.RoomID,
-		}, nil
+	place, ok := places[placeID]
+	if !ok {
+		return nil, ErrNotFound
 	}
-	return nil, ErrNotFound
+	return place, nil
 }
 
 func (s *Storage) Places(ctx context.Context, roomID rooms.ID) (map[places.ID]*places.Place, error) {
-	events, err := s.storage.ByRoomID(ctx, roomID, placeCreated)
+	events, err := s.storage.ByRoomID(ctx, roomID, placeCreated, placeDeleted)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get events: %w", err)
 	}
+	sort.Slice(events, func(i, j int) bool {
+		return time.Time(events[i].Timestamp).Before(time.Time(events[j].Timestamp))
+	})
 	result := make(map[places.ID]*places.Place)
 	for _, event := range events {
-		result[event.PlaceID] = &places.Place{
-			ID:     event.PlaceID,
-			Name:   event.Name,
-			UserID: event.UserID,
-			Time:   time.Time(event.Timestamp),
-			RoomID: event.RoomID,
+
+		fmt.Printf("\nnikitag: %+v\n\n", event)
+
+		switch event.Type {
+		case placeCreated:
+			result[event.PlaceID] = &places.Place{
+				ID:     event.PlaceID,
+				Name:   event.Name,
+				UserID: event.UserID,
+				Time:   time.Time(event.Timestamp),
+				RoomID: event.RoomID,
+			}
+		case placeDeleted:
+			delete(result, event.PlaceID)
 		}
 	}
 	return result, nil
