@@ -205,11 +205,23 @@ func (r *Roller) ListBoosts(ctx context.Context, roomID rooms.ID) ([]*Boost, err
 	return boosts, nil
 }
 
+func filterNonDeletedPlaces(pp map[places.ID]*places.Place) map[places.ID]*places.Place {
+	result := make(map[places.ID]*places.Place, len(pp))
+	for id, place := range pp {
+		if !place.IsDeleted {
+			result[id] = place
+		}
+	}
+	return result
+}
+
 func (r *Roller) ListPlaces(ctx context.Context, roomID rooms.ID, now time.Time) ([]*Place, error) {
 	allPlaces, err := r.placesStore.Places(ctx, roomID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list names: %w", err)
 	}
+
+	allPlaces = filterNonDeletedPlaces(allPlaces)
 
 	if len(allPlaces) == 0 {
 		return nil, ErrNoPlaces
@@ -303,6 +315,7 @@ func (r *Roller) CreateRoll(ctx context.Context, roomID rooms.ID, now time.Time)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list names: %w", err)
 	}
+	allPlaces = filterNonDeletedPlaces(allPlaces)
 
 	if len(allPlaces) == 0 {
 		return nil, ErrNoPlaces

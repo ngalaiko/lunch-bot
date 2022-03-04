@@ -15,7 +15,6 @@ export const getWeek = (date: Date) => {
 }
 
 export const weekday = (date: Date) => {
-  console.log(date, date.getDay())
   const weekdays = [
     'Sunday',
     'Monday',

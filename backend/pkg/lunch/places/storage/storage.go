@@ -83,7 +83,7 @@ func (s *Storage) Places(ctx context.Context, roomID rooms.ID) (map[places.ID]*p
 				RoomID: event.RoomID,
 			}
 		case placeDeleted:
-			delete(result, event.PlaceID)
+			result[event.PlaceID].IsDeleted = true
 		}
 	}
 	return result, nil

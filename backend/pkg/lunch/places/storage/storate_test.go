@@ -30,8 +30,10 @@ func Test_PlaceDeleted(t *testing.T) {
 
 	assertNoError(t, storage.Delete(context.Background(), users.ID("2"), place))
 
-	_, err2 := storage.Place(context.Background(), place.RoomID, place.ID)
-	assertError(t, err2, ErrNotFound)
+	deletedPlace, err2 := storage.Place(context.Background(), place.RoomID, place.ID)
+	assertNoError(t, err2)
+	assertEqual(t, place.ID, deletedPlace.ID)
+	assertEqual(t, true, deletedPlace.IsDeleted)
 }
 
 func assertNoError(t *testing.T, err error) {

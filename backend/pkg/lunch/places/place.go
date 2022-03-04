@@ -12,11 +12,12 @@ import (
 type ID string
 
 type Place struct {
-	ID     ID        `dynamodbav:"id" json:"id"`
-	Name   string    `dynamodbav:"name" json:"name"`
-	Time   time.Time `dynamodbav:"added_at,unixtime" json:"time"`
-	UserID users.ID  `dynamodbav:"user_id" json:"userId"`
-	RoomID rooms.ID  `json:"roomId"`
+	ID        ID        `json:"id"`
+	Name      string    `json:"name"`
+	Time      time.Time `json:"time"`
+	UserID    users.ID  `json:"userId"`
+	RoomID    rooms.ID  `json:"roomId"`
+	IsDeleted bool      `json:"-"`
 }
 
 func NewPlace(roomID rooms.ID, userID users.ID, name string) *Place {
