@@ -13,6 +13,30 @@ import (
 	"testing"
 )
 
+func Test_PlaceRestored(t *testing.T) {
+	file, err := ioutil.TempFile("", "test-bolt")
+	assertNoError(t, err)
+	bolt, err := store.NewBolt(file.Name())
+	assertNoError(t, err)
+
+	storage := New(events.NewBoltStorage(bolt))
+
+	place := places.NewPlace(rooms.ID("1"), users.ID("1"), "test")
+	assertNoError(t, storage.Create(context.Background(), place))
+
+	fromDB, err := storage.Place(context.Background(), place.RoomID, place.ID)
+	assertNoError(t, err)
+	assertEqual(t, place.ID, fromDB.ID)
+
+	assertNoError(t, storage.Delete(context.Background(), users.ID("2"), place))
+	assertNoError(t, storage.Restore(context.Background(), users.ID("2"), place))
+
+	restoredPlace, err2 := storage.Place(context.Background(), place.RoomID, place.ID)
+	assertNoError(t, err2)
+	assertEqual(t, place.ID, restoredPlace.ID)
+	assertEqual(t, false, restoredPlace.IsDeleted)
+}
+
 func Test_PlaceDeleted(t *testing.T) {
 	file, err := ioutil.TempFile("", "test-bolt")
 	assertNoError(t, err)

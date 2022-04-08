@@ -16,8 +16,9 @@ var (
 )
 
 const (
-	placeCreated events.Type = "places/created"
-	placeDeleted events.Type = "places/deleted"
+	placeCreated  events.Type = "places/created"
+	placeDeleted  events.Type = "places/deleted"
+	placeRestored events.Type = "places/restored"
 )
 
 type Storage struct {
@@ -28,6 +29,16 @@ func New(storage events.Storage) *Storage {
 	return &Storage{
 		storage: storage,
 	}
+}
+
+func (s *Storage) Restore(ctx context.Context, userID users.ID, place *places.Place) error {
+	return s.storage.Create(ctx, &events.Event{
+		UserID:    userID,
+		RoomID:    place.RoomID,
+		Timestamp: events.UnixNanoTime(time.Now()),
+		Type:      placeRestored,
+		PlaceID:   place.ID,
+	})
 }
 
 func (s *Storage) Delete(ctx context.Context, userID users.ID, place *places.Place) error {
@@ -64,7 +75,7 @@ func (s *Storage) Place(ctx context.Context, roomID rooms.ID, placeID places.ID)
 }
 
 func (s *Storage) Places(ctx context.Context, roomID rooms.ID) (map[places.ID]*places.Place, error) {
-	events, err := s.storage.ByRoomID(ctx, roomID, placeCreated, placeDeleted)
+	events, err := s.storage.ByRoomID(ctx, roomID, placeCreated, placeDeleted, placeRestored)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get events: %w", err)
 	}
@@ -84,6 +95,8 @@ func (s *Storage) Places(ctx context.Context, roomID rooms.ID) (map[places.ID]*p
 			}
 		case placeDeleted:
 			result[event.PlaceID].IsDeleted = true
+		case placeRestored:
+			result[event.PlaceID].IsDeleted = false
 		}
 	}
 	return result, nil
