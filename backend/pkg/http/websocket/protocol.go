@@ -14,6 +14,8 @@ const (
 	methodRollsCreate  method = "rolls/create"
 	methodBoostsCreate method = "boosts/create"
 	methodBoostsList   method = "boosts/list"
+	methodRoomsList    method = "rooms/list"
+	methodRoomsCreate  method = "rooms/create"
 )
 
 type request struct {
@@ -27,5 +29,6 @@ type response struct {
 	Places []*lunch.Place `json:"places,omitempty"`
 	Rolls  []*lunch.Roll  `json:"rolls,omitempty"`
 	Boosts []*lunch.Boost `json:"boosts,omitempty"`
+	Rooms  []*lunch.Room  `json:"rooms,omitempty"`
 	Error  string         `json:"error,omitempty"`
 }

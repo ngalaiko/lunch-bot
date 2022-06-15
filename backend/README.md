@@ -33,3 +33,8 @@ $ SLACK_SIGNING_SECRET=<secret> \
     go run ./cmd/server \
         --tls
 ```
+
+### Using dynamodb
+
+1. make sure you are logged in with aws locally
+2. run the app with `--tags dynamodb`

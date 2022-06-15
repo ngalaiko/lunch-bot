@@ -42,7 +42,25 @@ func Handler(roller *lunch.Roller) http.Handler {
 	roller.OnBoostCreated(h.onBoostCreated)
 	roller.OnPlaceCreated(h.onPlaceCreated)
 	roller.OnRollCreated(h.onRollCreated)
+	roller.OnRoomCreated(h.onRoomCreated)
+	roller.OnRoomUpdated(h.onRoomUpdated)
 	return r
+}
+
+func (h *handler) onRoomUpdated(ctx context.Context, room *lunch.Room) error {
+	rooms, err := h.roller.ListRooms(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list rooms: %s", err)
+	}
+	return h.broadcast(ws.OpText, &response{Rooms: rooms})
+}
+
+func (h *handler) onRoomCreated(ctx context.Context, room *lunch.Room) error {
+	rooms, err := h.roller.ListRooms(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list rooms: %s", err)
+	}
+	return h.broadcast(ws.OpText, &response{Rooms: rooms})
 }
 
 func (h *handler) onBoostCreated(ctx context.Context, boost *lunch.Boost) error {
@@ -137,6 +155,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) handle(ctx context.Context, req *request) (*response, error) {
 	switch req.Method {
+
 	case methodPlacesList:
 		return h.handlePlacesList(ctx, req)
 	case methodPlacesCreate:
@@ -198,6 +217,27 @@ func (h *handler) handleRollsList(ctx context.Context, req *request) (*response,
 		return nil, fmt.Errorf("failed to list rolls: %s", err)
 	}
 	return &response{ID: req.ID, Rolls: rolls}, nil
+}
+
+func (h *handler) handleRoomsList(ctx context.Context, req *request) (*response, error) {
+	rr, err := h.roller.ListRooms(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list rooms: %s", err)
+	}
+	return &response{ID: req.ID, Rooms: rr}, nil
+}
+
+func (h *handler) handleRoomsCreate(ctx context.Context, req *request) (*response, error) {
+	name, ok := req.Params["name"]
+	if !ok {
+		return &response{ID: req.ID, Error: "'name' parameter must be set"}, nil
+	}
+
+	if err := h.roller.CreateRoom(ctx, name); err != nil {
+		return nil, fmt.Errorf("failed to create room: %s", err)
+	}
+
+	return &response{ID: req.ID}, nil
 }
 
 func (h *handler) handlePlacesList(ctx context.Context, req *request) (*response, error) {

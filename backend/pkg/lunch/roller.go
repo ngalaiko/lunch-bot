@@ -60,6 +60,14 @@ func (r *Roller) CreateRoom(ctx context.Context, name string) error {
 		return fmt.Errorf("failed to store place: %w", err)
 	}
 
+	r.RoomCreated(&Room{
+		Room: room,
+		User: user,
+		Members: []*users.User{
+			user,
+		},
+	})
+
 	return nil
 }
 
@@ -68,9 +76,34 @@ func (r *Roller) LeaveRoom(ctx context.Context, roomID rooms.ID) error {
 	if !ok {
 		return fmt.Errorf("expected to find who in the context")
 	}
+
+	room, err := r.roomsStore.Room(ctx, roomID)
+	if errors.Is(err, storage_rooms.ErrNotFound) {
+		return fmt.Errorf("room not found")
+	} else if err != nil {
+		return fmt.Errorf("failed to get room: %w", err)
+	}
+
 	if err := r.roomsStore.Leave(ctx, user, roomID); err != nil {
 		return fmt.Errorf("failed to join room: %w", err)
 	}
+
+	allUsers, err := r.usersStore.List(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list users: %w", err)
+	}
+
+	roomView := &Room{
+		Room: room,
+		User: allUsers[room.UserID],
+	}
+
+	for uid := range room.MemberIDs {
+		roomView.Members = append(roomView.Members, allUsers[uid])
+	}
+
+	r.RoomUpdated(roomView)
+
 	return nil
 }
 
@@ -80,7 +113,8 @@ func (r *Roller) JoinRoom(ctx context.Context, roomID rooms.ID) error {
 		return fmt.Errorf("expected to find who in the context")
 	}
 
-	if _, err := r.roomsStore.Room(ctx, roomID); errors.Is(err, storage_rooms.ErrNotFound) {
+	room, err := r.roomsStore.Room(ctx, roomID)
+	if errors.Is(err, storage_rooms.ErrNotFound) {
 		return fmt.Errorf("room not found")
 	} else if err != nil {
 		return fmt.Errorf("failed to get room: %w", err)
@@ -89,6 +123,23 @@ func (r *Roller) JoinRoom(ctx context.Context, roomID rooms.ID) error {
 	if err := r.roomsStore.Join(ctx, user, roomID); err != nil {
 		return fmt.Errorf("failed to join room: %w", err)
 	}
+
+	allUsers, err := r.usersStore.List(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list users: %w", err)
+	}
+
+	roomView := &Room{
+		Room: room,
+		User: allUsers[room.UserID],
+	}
+
+	for uid := range room.MemberIDs {
+		roomView.Members = append(roomView.Members, allUsers[uid])
+	}
+
+	r.RoomUpdated(roomView)
+
 	return nil
 }
 

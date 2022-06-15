@@ -33,6 +33,32 @@ func (r *registry) OnPlaceCreated(fn func(context.Context, *Place) error) {
 	}, TypePlaceCreated)
 }
 
+func (r *registry) RoomUpdated(room *Room) {
+	r.pub(&event{
+		Type: TypeRoomUpdated,
+		Room: room,
+	})
+}
+
+func (r *registry) OnRoomUpdated(fn func(context.Context, *Room) error) {
+	r.sub(func(ctx context.Context, e *event) error {
+		return fn(ctx, e.Room)
+	}, TypeRoomUpdated)
+}
+
+func (r *registry) RoomCreated(room *Room) {
+	r.pub(&event{
+		Type: TypeRoomCreated,
+		Room: room,
+	})
+}
+
+func (r *registry) OnRoomCreated(fn func(context.Context, *Room) error) {
+	r.sub(func(ctx context.Context, e *event) error {
+		return fn(ctx, e.Room)
+	}, TypeRoomCreated)
+}
+
 func (r *registry) RollCreated(roll *Roll) {
 	r.pub(&event{
 		Type: TypeRollCreated,

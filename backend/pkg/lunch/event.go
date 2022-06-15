@@ -7,10 +7,16 @@ const (
 	TypeRollCreated
 	TypeBoostCreated
 	TypePlaceCreated
+	TypeRoomCreated
+	TypeRoomUpdated
 )
 
 func (t *Type) String() string {
 	switch *t {
+	case TypeRoomUpdated:
+		return "room_updated"
+	case TypeRoomCreated:
+		return "room_created"
 	case TypeRollCreated:
 		return "roll_created"
 	case TypeBoostCreated:
@@ -27,4 +33,5 @@ type event struct {
 	Place *Place
 	Roll  *Roll
 	Boost *Boost
+	Room  *Room
 }
