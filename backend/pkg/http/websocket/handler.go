@@ -48,19 +48,11 @@ func Handler(roller *lunch.Roller) http.Handler {
 }
 
 func (h *handler) onRoomUpdated(ctx context.Context, room *lunch.Room) error {
-	rooms, err := h.roller.ListRooms(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to list rooms: %s", err)
-	}
-	return h.broadcast(ws.OpText, &response{Rooms: rooms})
+	return h.broadcast(ws.OpText, &response{Rooms: []*lunch.Room{room}})
 }
 
 func (h *handler) onRoomCreated(ctx context.Context, room *lunch.Room) error {
-	rooms, err := h.roller.ListRooms(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to list rooms: %s", err)
-	}
-	return h.broadcast(ws.OpText, &response{Rooms: rooms})
+	return h.broadcast(ws.OpText, &response{Rooms: []*lunch.Room{room}})
 }
 
 func (h *handler) onBoostCreated(ctx context.Context, boost *lunch.Boost) error {
@@ -155,6 +147,10 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) handle(ctx context.Context, req *request) (*response, error) {
 	switch req.Method {
+	case methodRoomsList:
+		return h.handleRoomsList(ctx, req)
+	case methodRoomsCreate:
+		return h.handleRoomsCreate(ctx, req)
 
 	case methodPlacesList:
 		return h.handlePlacesList(ctx, req)

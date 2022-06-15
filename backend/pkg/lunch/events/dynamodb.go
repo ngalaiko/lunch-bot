@@ -42,7 +42,7 @@ func (d *dynamoDB) ByUserID(ctx context.Context, userID users.ID, types ...Type)
 	ee := []*Event{}
 	if err := d.db.Query(ctx, &ee, fmt.Sprintf(`
 		SELECT * FROM "%s"
-		WHERE 'user_id' = ?
+		WHERE user_id = ?
 	`, d.tableName), userID); err != nil {
 		return nil, fmt.Errorf("failed to query: %w", err)
 	}

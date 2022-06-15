@@ -9,3 +9,6 @@ export * from './rolls'
 
 export { default as boosts } from './boosts'
 export * from './boosts'
+
+export { default as rooms } from './rooms'
+export * from './rooms'

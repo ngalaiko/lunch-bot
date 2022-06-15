@@ -152,20 +152,16 @@ func (r *Roller) ListRooms(ctx context.Context) ([]*Room, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list rooms: %w", err)
 	}
-	rooms := make([]*rooms.Room, len(roomIDs))
-	for id := range roomIDs {
-		room, err := r.roomsStore.Room(ctx, id)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get room: %w", err)
-		}
-		rooms = append(rooms, room)
-	}
 	allUsers, err := r.usersStore.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list users: %w", err)
 	}
 	result := make([]*Room, 0, len(roomIDs))
-	for _, room := range rooms {
+	for id := range roomIDs {
+		room, err := r.roomsStore.Room(ctx, id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get room: %w", err)
+		}
 		roomView := &Room{
 			Room: room,
 			User: allUsers[room.UserID],
