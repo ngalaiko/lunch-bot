@@ -1,12 +1,7 @@
-<script lang="ts" context="module">
-  import { rolls, places, boosts } from '../../api'
-  const fetching = Promise.all([rolls.list(), places.list(), boosts.list()])
-</script>
-
 <script lang="ts">
+  import { rolls, places, boosts } from '../../api'
   import type { Place, Boost, Roll } from '../../api'
   import { getWeek, weekday } from '../../lib/time'
-  import { Loading } from '../molecules'
 
   type HistoryItem = Place | Boost | Roll
 
@@ -38,33 +33,27 @@
 </script>
 
 <div class="flex flex-col">
-  {#await fetching}
-    <Loading />
-  {:then}
-    {#each Array.from(groupByYear(fullHistory)) as [year, items]}
-      {#each Array.from(groupByWeek(items)) as [week, items]}
-        <section class="flex flex-1 flex-col items-center">
-          <h2 class="py-4">{year} w.{week}</h2>
-          <ul class="flex flex-col space-y-2 w-3/4">
-            {#each items as item}
-              <li data-id={item.id} class="flex flex-1 justify-between">
-                <time datetime={item.time.toISOString()}>{weekday(item.time)}</time>
-                <p>
-                  {#if item.__typename === 'Roll'}
-                    {item.user.name} rolled {item.place.name}
-                  {:else if item.__typename === 'Boost'}
-                    {item.user.name} boosted {item.place.name}
-                  {:else if item.__typename === 'Place' && item.user}
-                    {item.user.name} added {item.name}
-                  {/if}
-                </p>
-              </li>
-            {/each}
-          </ul>
-        </section>
-      {/each}
+  {#each Array.from(groupByYear(fullHistory)) as [year, items]}
+    {#each Array.from(groupByWeek(items)) as [week, items]}
+      <section class="flex flex-1 flex-col items-center">
+        <h2 class="py-4">{year} w.{week}</h2>
+        <ul class="flex flex-col space-y-2 w-3/4">
+          {#each items as item}
+            <li data-id={item.id} class="flex flex-1 justify-between">
+              <time datetime={item.time.toISOString()}>{weekday(item.time)}</time>
+              <p>
+                {#if item.__typename === 'Roll'}
+                  {item.user.name} rolled {item.place.name}
+                {:else if item.__typename === 'Boost'}
+                  {item.user.name} boosted {item.place.name}
+                {:else if item.__typename === 'Place' && item.user}
+                  {item.user.name} added {item.name}
+                {/if}
+              </p>
+            </li>
+          {/each}
+        </ul>
+      </section>
     {/each}
-  {:catch e}
-    <p>Error: {e.message}</p>
-  {/await}
+  {/each}
 </div>

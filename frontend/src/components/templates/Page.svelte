@@ -1,3 +1,8 @@
+<script lang="ts" context="module">
+  import ws from '../../api/protocols/websocket'
+  ws.open()
+</script>
+
 <script lang="ts">
   import Auth from './Auth.svelte'
   import Header from './Header.svelte'

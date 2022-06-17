@@ -8,6 +8,7 @@ import { parseJSON as parseUserJSON } from './users'
 export type Boost = {
   __typename: 'Boost'
 
+  id: string
   time: Date
   userId: string
   user: User
@@ -28,7 +29,7 @@ const store = writable<Boost[]>([])
 const parseJSON = (data: any): Boost => {
   return {
     __typename: 'Boost',
-
+    id: data.id,
     time: new Date(data.time),
     placeId: data.placeId,
     place: parsePlaceJSON(data.place),

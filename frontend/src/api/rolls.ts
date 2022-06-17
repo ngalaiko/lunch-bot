@@ -8,6 +8,7 @@ import { parseJSON as parseUserJSON } from './users'
 export type Roll = {
   __typename: 'Roll'
 
+  id: string
   placeId: string
   userId: string
   user: User
@@ -24,6 +25,7 @@ const parseJSON = (data: any): Roll => {
   return {
     __typename: 'Roll',
     placeId: data.placeId,
+    id: data.id,
     time: new Date(data.time),
     userId: data.userId,
     user: parseUserJSON(data.user),

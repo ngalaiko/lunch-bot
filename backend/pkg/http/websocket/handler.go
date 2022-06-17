@@ -93,6 +93,31 @@ func (h *handler) registerConnection(conn io.ReadWriter) func() {
 	}
 }
 
+func (h *handler) initConnection(ctx context.Context, conn io.ReadWriter) error {
+	places, err := h.roller.ListPlaces(ctx, roomID, time.Now())
+	if err != nil {
+		return fmt.Errorf("failed to list chances: %s", err)
+	}
+	boosts, err := h.roller.ListBoosts(ctx, roomID)
+	if err != nil {
+		return fmt.Errorf("failed to list boosts: %s", err)
+	}
+	rolls, err := h.roller.ListRolls(ctx, roomID)
+	if err != nil {
+		return fmt.Errorf("failed to list rolls: %s", err)
+	}
+	rooms, err := h.roller.ListRooms(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list rooms: %s", err)
+	}
+	return writeResponse(conn, ws.OpText, &response{
+		Places: places,
+		Boosts: boosts,
+		Rolls:  rolls,
+		Rooms:  rooms,
+	})
+}
+
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if _, ok := users.FromContext(r.Context()); !ok {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -105,6 +130,11 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer h.registerConnection(conn)()
 	defer conn.Close()
+
+	if err := h.initConnection(r.Context(), conn); err != nil {
+		log.Printf("failed to init connection: %s", err)
+		return
+	}
 
 	for {
 		msg, op, err := wsutil.ReadClientData(conn)

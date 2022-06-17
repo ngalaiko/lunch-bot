@@ -25,7 +25,7 @@ type request struct {
 }
 
 type response struct {
-	ID     string         `json:"id"`
+	ID     string         `json:"id,omitempty"`
 	Places []*lunch.Place `json:"places,omitempty"`
 	Rolls  []*lunch.Roll  `json:"rolls,omitempty"`
 	Boosts []*lunch.Boost `json:"boosts,omitempty"`
